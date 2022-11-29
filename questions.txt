@@ -1,0 +1,5 @@
+Okey to use argparse? not standard library
+
+test:
+Arg outside of range
+Arg not present
