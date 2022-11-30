@@ -92,9 +92,15 @@ func (node Node) checkPredecessor(){
 // ask node n to find the successor of id
 // or a better node to continue the search with
 func (node Node) findSuccessor(id int) Node {
-	suc := node.successor[0]
-	if id == node.id || id == suc.id {
-		return *suc
+
+	if id == node.id {
+		return node
+	}
+
+	for _, suc := range node.successor {
+		if id == suc.id {
+			return *suc
+		}
 	}
 
 	return node.closestPrecedingNode(id)
