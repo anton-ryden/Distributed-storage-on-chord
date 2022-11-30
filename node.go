@@ -1,10 +1,7 @@
 package main
 
 import (
-	"log"
 	"math"
-	"net"
-	"strconv"
 )
 
 type Key string
@@ -23,16 +20,9 @@ type Node struct {
 	Bucket map[Key]string
 }
 
-func (node Node) start() {
-	// Check if valid address
-	checkIPAddress(*a)
-
-	// Start tcp server with port from argument
-	ln, err := net.Listen("tcp", ":"+strconv.Itoa(*p))
-	defer ln.Close()
-	if err != nil {
-		log.Fatalln(err)
-	}
+func (node Node) print() {
+	println("Adress: " + node.address)
+	println("Id: " + string(node.id))
 }
 
 // create a new Chord ring.
