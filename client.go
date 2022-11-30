@@ -17,12 +17,12 @@ func main() {
 
 	// Error handling in arguments file, so we only need to check if ja is set
 	addr := NodeAddress(*a + ":" + strconv.Itoa(*p))
-	node := Node{address: addr}
+	node := Node{address: addr, m: *r}
 	if *ja == "" {
 		node.create()
 	} else {
 		addr := NodeAddress(*ja + ":" + strconv.Itoa(*jp))
-		joinNode := Node{address: addr}
+		joinNode := Node{address: addr, m: *r}
 		node.join(joinNode)
 	}
 
