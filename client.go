@@ -26,15 +26,6 @@ func main() {
 		node.join(joinNode)
 	}
 
-	// Check if valid address
-	checkIPAddress(*a)
-
-	// Start tcp server with port from argument
-	ln, err := net.Listen("tcp", ":"+strconv.Itoa(*p))
-	defer ln.Close()
-	if err != nil {
-		log.Fatalln(err)
-	}
 }
 
 // Checks if ip address is valid

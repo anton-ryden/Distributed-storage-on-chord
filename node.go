@@ -1,6 +1,11 @@
 package main
 
-import "math"
+import (
+	"log"
+	"math"
+	"net"
+	"strconv"
+)
 
 type Key string
 
@@ -16,6 +21,18 @@ type Node struct {
 	id          int
 
 	Bucket map[Key]string
+}
+
+func (node Node) start() {
+	// Check if valid address
+	checkIPAddress(*a)
+
+	// Start tcp server with port from argument
+	ln, err := net.Listen("tcp", ":"+strconv.Itoa(*p))
+	defer ln.Close()
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 // create a new Chord ring.
@@ -75,27 +92,22 @@ func (node Node) checkPredecessor(){
 // ask node n to find the successor of id
 // or a better node to continue the search with
 func (node Node) findSuccessor(id int) Node {
-	for _, suc := range node.successor {
-		if id == node.id || id == suc.id {
-			return *suc
-		}
+	suc := node.successor[0]
+	if id == node.id || id == suc.id {
+		return *suc
 	}
+
 	return node.closestPrecedingNode(id)
 }
 
 // search the local table for the highest predecessor of id
 func (node Node) closestPrecedingNode(id int) Node {
-	i := node.m
-	for i > 1 {
-		if node.fingerTable[i] == &node || node.fingerTable[i] == &find(id, node.next) {
-			return node.fingerTable[i]
+	for i := node.m; i > 1; i-- {
+		iNode := node.findSuccessor(id)
+		if node.fingerTable[i] == &node || node.fingerTable[i] == &iNode {
+			iFinger := node.fingerTable[i]
+			return *iFinger
 		}
-
-		i--
 	}
-}
-
-// find the successor of id
-func find(id int, start int) Node {
-	return Node{}
+	return *node.successor[0]
 }
