@@ -9,6 +9,7 @@ import (
 
 // Setups all the arguments
 func setupArguments() {
+	// This is a comment
 	// Create new parser object
 	parser := argparse.NewParser("Chord client", "Chord client will be a command-line utility")
 
