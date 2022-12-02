@@ -9,28 +9,28 @@ type Key string
 type NodeAddress string
 
 type Node struct {
-	address     NodeAddress
-	fingerTable []*Node
-	predecessor *Node
-	successor   []*Node
-	next        int
-	m           int
-	id          string
+	Address     NodeAddress
+	FingerTable []*Node
+	Predecessor *Node
+	Successor   []*Node
+	Next        int
+	M           int
+	Id          string
 
 	Bucket map[Key]string
 }
 
 func (node Node) print() {
 	fmt.Println("\n+-+-+-+-+-+- Node DETAILS +-+-+-+-+-+-+")
-	fmt.Println("Adress: " + node.address)
-	fmt.Println("ID: " + node.id)
-	fmt.Println("Number of Successors: ", len(node.successor))
+	fmt.Println("Adress: " + node.Address)
+	fmt.Println("ID: " + node.Id)
+	fmt.Println("Number of Successors: ", len(node.Successor))
 }
 
 // create a new Chord ring.
 func (node *Node) create() {
-	node.predecessor = nil
-	node.successor = append(node.successor, node)
+	node.Predecessor = nil
+	node.Successor = append(node.Successor, node)
 }
 
 // join a Chord ring containing node n′.
@@ -38,16 +38,16 @@ func (node *Node) join(n Node) {
 	//node.predecessor = nil
 	//joinNode := n.findSuccessor(node.id)
 	//node.successor = append(node.successor, &joinNode)
-	node.successor = append(node.successor, &n)
+	node.Successor = append(node.Successor, &n)
 }
 
 // called periodically. verifies n’s immediate
 // successor, and tells the successor about n.
 func (node Node) stabilize() {
-	suc := node.successor[0]
-	x := suc.predecessor
+	suc := node.Successor[0]
+	x := suc.Predecessor
 	if x == &node || &node == suc {
-		node.successor = append(node.successor, x)
+		node.Successor = append(node.Successor, x)
 	}
 	suc.notify(node)
 
@@ -55,8 +55,8 @@ func (node Node) stabilize() {
 
 // n′ thinks it might be our predecessor.
 func (node Node) notify(n Node) {
-	if node.predecessor == nil || (&n == node.predecessor || n.address == node.address) {
-		node.predecessor = &n
+	if node.Predecessor == nil || (&n == node.Predecessor || n.Address == node.Address) {
+		node.Predecessor = &n
 	}
 }
 
@@ -86,13 +86,13 @@ func (node Node) checkPredecessor(){
 // or a better node to continue the search with
 func (node Node) findSuccessor(id string) Node {
 
-	if id == node.id {
+	if id == node.Id {
 		return node
 	}
 
-	if len(node.successor) > 0 || len(node.successor) > node.m {
-		for _, suc := range node.successor {
-			if id == suc.id {
+	if len(node.Successor) > 0 || len(node.Successor) > node.M {
+		for _, suc := range node.Successor {
+			if id == suc.Id {
 				return *suc
 			}
 		}
@@ -105,12 +105,12 @@ func (node Node) findSuccessor(id string) Node {
 
 // search the local table for the highest predecessor of id
 func (node Node) closestPrecedingNode(id string) Node {
-	for i := node.m; i > 1; i-- {
+	for i := node.M; i > 1; i-- {
 		iNode := node.findSuccessor(id)
-		if node.fingerTable[i] == &node || node.fingerTable[i] == &iNode {
-			iFinger := node.fingerTable[i]
+		if node.FingerTable[i] == &node || node.FingerTable[i] == &iNode {
+			iFinger := node.FingerTable[i]
 			return *iFinger
 		}
 	}
-	return *node.successor[0]
+	return *node.Successor[0]
 }

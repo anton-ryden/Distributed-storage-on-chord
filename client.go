@@ -35,7 +35,7 @@ func main() {
 
 	// Error handling in arguments file, so we only need to check if ja is set
 	addr := NodeAddress(*a + ":" + strconv.Itoa(*p))
-	myNode = Node{address: addr, m: *r, id: id}
+	myNode = Node{Address: addr, M: *r, Id: id}
 	if *ja == "" {
 		myNode.create()
 		myNode.print()
@@ -44,14 +44,24 @@ func main() {
 	} else {
 		joinAddr := NodeAddress(*ja + ":" + strconv.Itoa(*jp))
 
-		joinNode := Node{address: joinAddr, m: *r}
-		client, err := rpc.Dial("tcp", string(joinNode.address))
+		joinNode := Node{Address: joinAddr, M: *r}
+		joinJoinNode := Node{
+			Address:     "recursive",
+			FingerTable: nil,
+			Predecessor: nil,
+			Successor:   nil,
+			Next:        0,
+			M:           0,
+			Id:          "Aids",
+			Bucket:      nil,
+		}
+		joinNode.Successor = append(joinNode.Successor, &joinJoinNode)
+
+		client, err := rpc.Dial("tcp", string(joinNode.Address))
 		checkError(err)
 
-		args := Args{string(addr), id, myNode}
-
 		var reply int
-		err = client.Call("Ring.Join", args, &reply)
+		err = client.Call("Ring.Join", joinNode, &reply)
 		myNode.print()
 		println(reply)
 		checkError(err)
@@ -59,14 +69,14 @@ func main() {
 
 }
 
-func (r *Ring) Join(args Args, reply *int) error {
+func (r *Ring) Join(node Node, reply *int) error {
 	log.Println("A new node has joined the network!")
-	log.Println("Adress: " + args.Address)
-	log.Println("ID: " + args.Id)
+	log.Println("Adress: " + node.Address)
+	log.Println("ID: " + node.Id)
 
-	args.node.print()
+	//node.node.print()
 
-	myNode.join(args.node)
+	//myNode.join(args.node)
 	myNode.print()
 
 	return nil
@@ -76,7 +86,7 @@ func startListen() {
 	ring := new(Ring)
 	rpc.Register(ring)
 
-	tcpAddr, err := net.ResolveTCPAddr("tcp", string(myNode.address))
+	tcpAddr, err := net.ResolveTCPAddr("tcp", string(myNode.Address))
 	checkError(err)
 
 	listener, err := net.ListenTCP("tcp", tcpAddr)
@@ -99,17 +109,17 @@ func checkError(err error) {
 
 func PrintState(node Node) {
 	fmt.Println("+-+-+-+-+-+ Node info +-+-+-+-+-+-\n")
-	fmt.Println("ID: ", node.id, "\nIP addr:"+node.address)
+	fmt.Println("ID: ", node.Id, "\nIP addr:"+node.Address)
 
 	fmt.Println("\n+-+-+-+-+-+ Successors info +-+-+-+-+-+-\n")
-	for i, suc := range node.successor {
+	for i, suc := range node.Successor {
 		fmt.Println("\nSuccessor node ", i, "info\n")
-		fmt.Println("ID: ", suc.id, "\nIP addr:"+suc.address)
+		fmt.Println("ID: ", suc.Id, "\nIP addr:"+suc.Address)
 	}
 
 	fmt.Println("\n+-+-+-+-+-+ Fingertable info +-+-+-+-+-+-\n")
-	for i, finger := range node.fingerTable {
+	for i, finger := range node.FingerTable {
 		fmt.Println("\nFinger node", i, "info\n")
-		fmt.Println("ID: ", finger.id, "\nIP addr:"+finger.address)
+		fmt.Println("ID: ", finger.Id, "\nIP addr:"+finger.Address)
 	}
 }
