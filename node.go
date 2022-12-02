@@ -34,11 +34,23 @@ func (node *Node) create() {
 }
 
 // join a Chord ring containing node n′.
-func (node *Node) join(n Node) {
-	//node.predecessor = nil
-	//joinNode := n.findSuccessor(node.id)
-	//node.successor = append(node.successor, &joinNode)
-	node.Successor = append(node.Successor, &n)
+func (node *Node) join(joinNode Node) {
+	node.Predecessor = nil
+	//successors := joinNode.findSuccessor(joinNode.Id)
+	//node.Successor = append(node.Successor, &successors)
+	node.Successor = append(node.Successor, &joinNode)
+}
+
+func (node Node) find(id string, start Node) Node {
+	found, nextNode := false, start
+	for i := 0; found == false && i < len(start.Successor); i++ {
+		found, nextNode = nextNode.findSuccessor(id)
+	}
+	if found == true {
+		return nextNode
+	} else {
+		return
+	}
 }
 
 // called periodically. verifies n’s immediate
@@ -50,7 +62,6 @@ func (node Node) stabilize() {
 		node.Successor = append(node.Successor, x)
 	}
 	suc.notify(node)
-
 }
 
 // n′ thinks it might be our predecessor.
@@ -84,23 +95,18 @@ func (node Node) checkPredecessor(){
 
 // ask node n to find the successor of id
 // or a better node to continue the search with
-func (node Node) findSuccessor(id string) Node {
+func (node Node) findSuccessor(id string) (bool, Node) {
 
 	if id == node.Id {
-		return node
+		return true, node
 	}
 
-	if len(node.Successor) > 0 || len(node.Successor) > node.R {
-		for _, suc := range node.Successor {
-			if id == suc.Id {
-				return *suc
-			}
+	for _, suc := range node.Successor {
+		if id == suc.Id {
+			return true, *suc
 		}
-	} else {
-		return node
 	}
-
-	return node.closestPrecedingNode(id)
+	return false, node.closestPrecedingNode(id)
 }
 
 // search the local table for the highest predecessor of id
