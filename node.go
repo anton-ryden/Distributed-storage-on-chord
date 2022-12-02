@@ -43,13 +43,15 @@ func (node *Node) join(joinNode Node) {
 
 func (node Node) find(id string, start Node) Node {
 	found, nextNode := false, start
-	for i := 0; found == false && i < len(start.Successor); i++ {
-		found, nextNode = nextNode.findSuccessor(id)
+	for found == false {
+		found, nextNode = start.findSuccessor(id)
 	}
+
 	if found == true {
 		return nextNode
 	} else {
-		return
+		//return find(node.Successor[i])
+		return Node{}
 	}
 }
 
@@ -96,12 +98,13 @@ func (node Node) checkPredecessor(){
 // ask node n to find the successor of id
 // or a better node to continue the search with
 func (node Node) findSuccessor(id string) (bool, Node) {
-
+	println("id: " + node.Id)
 	if id == node.Id {
 		return true, node
 	}
 
 	for _, suc := range node.Successor {
+		println("id: " + suc.Id)
 		if id == suc.Id {
 			return true, *suc
 		}
@@ -112,7 +115,7 @@ func (node Node) findSuccessor(id string) (bool, Node) {
 // search the local table for the highest predecessor of id
 func (node Node) closestPrecedingNode(id string) Node {
 	for i := node.R; i > 1; i-- {
-		iNode := node.findSuccessor(id)
+		_, iNode := node.findSuccessor(id)
 		if node.FingerTable[i] == &node || node.FingerTable[i] == &iNode {
 			iFinger := node.FingerTable[i]
 			return *iFinger

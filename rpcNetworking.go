@@ -15,6 +15,21 @@ func (r *Ring) Join(node Node, reply *int) error {
 	return nil
 }
 
+func (r *Ring) find(idToFind string, reply *string) {
+	//return myNode.find(idToFind)
+}
+
+func find(address string, idToFind string) {
+	client, err := rpc.Dial("tcp", address)
+	checkError(err)
+
+	var reply string
+	err = client.Call("Ring.Find", idToFind, &reply)
+	myNode.print()
+	println(reply)
+	checkError(err)
+}
+
 func initListen() {
 	ring := new(Ring)
 	rpc.Register(ring)

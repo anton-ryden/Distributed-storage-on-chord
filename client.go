@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"net/rpc"
 	"os"
 	"strconv"
 )
@@ -32,14 +31,66 @@ func main() {
 		myNode.create()
 		myNode.print()
 	} else {
-		client, err := rpc.Dial("tcp", *ja+":"+strconv.Itoa(*jp))
-		checkError(err)
+		node1 := Node{
+			Address:     "node1",
+			FingerTable: nil,
+			Predecessor: nil,
+			Successor:   nil,
+			Next:        0,
+			R:           0,
+			Id:          "1",
+			Bucket:      nil,
+		}
+		node2 := Node{
+			Address:     "node2",
+			FingerTable: nil,
+			Predecessor: nil,
+			Successor:   nil,
+			Next:        0,
+			R:           0,
+			Id:          "2",
+			Bucket:      nil,
+		}
+		node3 := Node{
+			Address:     "node3",
+			FingerTable: nil,
+			Predecessor: nil,
+			Successor:   nil,
+			Next:        0,
+			R:           0,
+			Id:          "3",
+			Bucket:      nil,
+		}
+		node4 := Node{
+			Address:     "node4",
+			FingerTable: nil,
+			Predecessor: nil,
+			Successor:   nil,
+			Next:        0,
+			R:           0,
+			Id:          "4",
+			Bucket:      nil,
+		}
+		node1.Successor = append(node1.Successor, &node2)
+		node1.Successor = append(node1.Successor, &node3)
+		node2.Successor = append(node2.Successor, &node3)
+		node2.Successor = append(node2.Successor, &node4)
+		node3.Successor = append(node3.Successor, &node4)
+		node3.Successor = append(node3.Successor, &node1)
+		node4.Successor = append(node4.Successor, &node1)
+		node4.Successor = append(node4.Successor, &node2)
 
-		var reply int
-		err = client.Call("Ring.Join", myNode, &reply)
-		myNode.print()
-		println(reply)
-		checkError(err)
+		nodeTemp := Node{
+			Address:     "temp",
+			FingerTable: nil,
+			Predecessor: nil,
+			Successor:   nil,
+			Next:        0,
+			R:           0,
+			Id:          "temp",
+			Bucket:      nil,
+		}
+		nodeTemp.find("69", node1)
 	}
 
 	// Init for listening
