@@ -39,8 +39,6 @@ func main() {
 	if *ja == "" {
 		myNode.create()
 		myNode.print()
-		startListen()
-
 	} else {
 		joinAddr := NodeAddress(*ja + ":" + strconv.Itoa(*jp))
 
@@ -66,6 +64,7 @@ func main() {
 		println(reply)
 		checkError(err)
 	}
+	startListen()
 
 }
 
