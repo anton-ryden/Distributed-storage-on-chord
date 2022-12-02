@@ -26,7 +26,7 @@ func main() {
 	// Error handling in arguments file, so we only need to check if ja is set
 	addr := NodeAddress(*a + ":" + strconv.Itoa(*p))
 	id := hash(*a + strconv.Itoa(*p))
-	myNode = Node{Address: addr, M: *r, Id: id}
+	myNode = Node{Address: addr, R: *r, Id: id}
 
 	if *ja == "" {
 		myNode.create()
@@ -70,7 +70,7 @@ func main() {
 
 func hash(ipPort string) string {
 	h := sha1.New()
-	return hex.EncodeToString(h.Sum([]byte(ipPort)))
+	return hex.EncodeToString(h.Sum([]byte(ipPort)))[:40]
 }
 
 func checkError(err error) {

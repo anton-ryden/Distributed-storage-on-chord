@@ -14,7 +14,7 @@ type Node struct {
 	Predecessor *Node
 	Successor   []*Node
 	Next        int
-	M           int
+	R           int
 	Id          string
 
 	Bucket map[Key]string
@@ -90,7 +90,7 @@ func (node Node) findSuccessor(id string) Node {
 		return node
 	}
 
-	if len(node.Successor) > 0 || len(node.Successor) > node.M {
+	if len(node.Successor) > 0 || len(node.Successor) > node.R {
 		for _, suc := range node.Successor {
 			if id == suc.Id {
 				return *suc
@@ -105,7 +105,7 @@ func (node Node) findSuccessor(id string) Node {
 
 // search the local table for the highest predecessor of id
 func (node Node) closestPrecedingNode(id string) Node {
-	for i := node.M; i > 1; i-- {
+	for i := node.R; i > 1; i-- {
 		iNode := node.findSuccessor(id)
 		if node.FingerTable[i] == &node || node.FingerTable[i] == &iNode {
 			iFinger := node.FingerTable[i]
