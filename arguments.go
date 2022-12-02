@@ -18,7 +18,7 @@ func setupArguments() {
 
 	// All arguments with option (ex. if they are required and help argument)
 	a = parser.String("a", "a", &argparse.Options{Required: true, Help: "The IP address that the Chord client will bind to, as well as advertise to other nodes. Represented as an ASCII string (e.g., 128.8.126.63)"})
-	p = parser.Int("p", "p", &argparse.Options{Required: true, Help: "The identifier (ID) assigned to the Chord client which will override the ID computed by the SHA1 sum of the client’s IP address and port number. Represented as a string of 40 characters matching [0-9a-fA-F]. Optional parameter."})
+	p = parser.Int("p", "p", &argparse.Options{Required: true, Help: "The port that the Chord client will bind to and listen on. Represented as a base-10 integer. Must be specified."})
 	jp = parser.Int("", "jp", &argparse.Options{Help: "The port that an existing Chord node is bound to and listening on. The Chord client will join this node’s ring. Represented as a base-10 integer. Must be specified if --ja is specified."})
 	ja = parser.String("", "ja", &argparse.Options{Help: "The IP address of the machine running a Chord node. The Chord client will join this node’s ring. Represented as an ASCII string (e.g., 128.8.126.63). Must be specified if --jp is specified."})
 	ts = parser.Int("", "ts", &argparse.Options{Required: true, Help: "The time in milliseconds between invocations of ‘stabilize’. Represented as a base-10 integer. Must be specified, with a value in the range of [1,60000]."})
@@ -29,7 +29,7 @@ func setupArguments() {
 	argWithRanges["tcp"] = 60000
 	r = parser.Int("r", "r", &argparse.Options{Required: true, Help: "The number of successors maintained by the Chord client. Represented as a base-10 integer. Must be specified, with a value in the range of [1,32]."})
 	argWithRanges["r"] = 32
-	i = parser.String("i", "i", &argparse.Options{Help: "The IP address of the machine running a Chord node. The Chord client will join this node’s ring. Represented as an ASCII string (e.g., 128.8.126.63). Must be specified if --jp is specified."})
+	i = parser.String("i", "i", &argparse.Options{Help: "The identifier (ID) assigned to the Chord client which will override the ID computed by the SHA1 sum of the client’s IP address and port number. Represented as a string of 40 characters matching [0-9a-fA-F]. Optional parameter."})
 
 	// Parse arguments
 	err := parser.Parse(os.Args)

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"math"
+	"fmt"
 )
 
 type Key string
@@ -15,27 +15,30 @@ type Node struct {
 	successor   []*Node
 	next        int
 	m           int
-	id          int
+	id          string
 
 	Bucket map[Key]string
 }
 
 func (node Node) print() {
-	println("Adress: " + node.address)
-	println("Id: " + string(node.id))
+	fmt.Println("\n+-+-+-+-+-+- Node DETAILS +-+-+-+-+-+-+")
+	fmt.Println("Adress: " + node.address)
+	fmt.Println("ID: " + node.id)
+	fmt.Println("Number of Successors: ", len(node.successor))
 }
 
 // create a new Chord ring.
-func (node Node) create() {
+func (node *Node) create() {
 	node.predecessor = nil
-	node.successor = append(node.successor, &node)
+	node.successor = append(node.successor, node)
 }
 
 // join a Chord ring containing node n′.
-func (node Node) join(n Node) {
-	node.predecessor = nil
-	joinNode := n.findSuccessor(node.id)
-	node.successor = append(node.successor, &joinNode)
+func (node *Node) join(n Node) {
+	//node.predecessor = nil
+	//joinNode := n.findSuccessor(node.id)
+	//node.successor = append(node.successor, &joinNode)
+	node.successor = append(node.successor, &n)
 }
 
 // called periodically. verifies n’s immediate
@@ -57,6 +60,7 @@ func (node Node) notify(n Node) {
 	}
 }
 
+/*
 // called periodically. refreshes finger table entries.
 // next stores the index of the next finger to fix.
 func (node Node) fixFingers() {
@@ -69,9 +73,8 @@ func (node Node) fixFingers() {
 	suc := node.findSuccessor(calc)
 	node.fingerTable[node.next] = &suc
 }
-
-// called periodically. checks whether predecessor has failed.
 /*
+// called periodically. checks whether predecessor has failed.
 func (node Node) checkPredecessor(){
 	if (node.predecessor has failed){
 		node.predecessor = nil;
@@ -81,23 +84,27 @@ func (node Node) checkPredecessor(){
 
 // ask node n to find the successor of id
 // or a better node to continue the search with
-func (node Node) findSuccessor(id int) Node {
+func (node Node) findSuccessor(id string) Node {
 
 	if id == node.id {
 		return node
 	}
 
-	for _, suc := range node.successor {
-		if id == suc.id {
-			return *suc
+	if len(node.successor) > 0 || len(node.successor) > node.m {
+		for _, suc := range node.successor {
+			if id == suc.id {
+				return *suc
+			}
 		}
+	} else {
+		return node
 	}
 
 	return node.closestPrecedingNode(id)
 }
 
 // search the local table for the highest predecessor of id
-func (node Node) closestPrecedingNode(id int) Node {
+func (node Node) closestPrecedingNode(id string) Node {
 	for i := node.m; i > 1; i-- {
 		iNode := node.findSuccessor(id)
 		if node.fingerTable[i] == &node || node.fingerTable[i] == &iNode {
