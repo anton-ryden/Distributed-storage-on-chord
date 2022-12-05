@@ -154,7 +154,7 @@ func PrintState() {
 		fmt.Println("\n+-+-+-+-+-+ Successors info +-+-+-+-+-+-")
 		for i, suc := range myNode.Successor {
 			fmt.Println("\n   Successor node", i, "info -------------")
-			fmt.Println("    ID:", myNode.Id, "\n    IP/port: "+suc.Address)
+			fmt.Println("    ID:", suc.Id, "\n    IP/port: "+suc.Address)
 			fmt.Println("   ------------------------------------")
 		}
 	} else {
