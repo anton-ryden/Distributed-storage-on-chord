@@ -165,7 +165,7 @@ func PrintState() {
 		fmt.Println("\n+-+-+-+-+-+ Fingertable info +-+-+-+-+-+-")
 		for i, finger := range myNode.FingerTable {
 			fmt.Println("\n   Finger node", i, "info -------------")
-			fmt.Println("    ID:", myNode.Id, "\n    IP/port: "+finger.Address)
+			fmt.Println("    ID:", finger.Id, "\n    IP/port: "+finger.Address)
 			fmt.Println("   ------------------------------------")
 		}
 	} else {
