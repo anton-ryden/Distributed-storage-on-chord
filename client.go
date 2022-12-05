@@ -30,7 +30,6 @@ func main() {
 	}
 
 	id := hash(*i)
-
 	myNode = Node{Address: addr, R: *r, Id: id}
 
 	if *ja == "" {
@@ -45,7 +44,7 @@ func main() {
 			Successor:   nil,
 			Next:        0,
 			R:           0,
-			Id:          []byte("1"),
+			Id:          big.NewInt(1),
 			Bucket:      nil,
 		}
 		node2 := Node{
@@ -55,7 +54,7 @@ func main() {
 			Successor:   nil,
 			Next:        0,
 			R:           0,
-			Id:          []byte("2"),
+			Id:          big.NewInt(2),
 			Bucket:      nil,
 		}
 		node3 := Node{
@@ -65,7 +64,7 @@ func main() {
 			Successor:   nil,
 			Next:        0,
 			R:           0,
-			Id:          []byte("3"),
+			Id:          big.NewInt(3),
 			Bucket:      nil,
 		}
 		node4 := Node{
@@ -75,7 +74,7 @@ func main() {
 			Successor:   nil,
 			Next:        0,
 			R:           0,
-			Id:          []byte("4"),
+			Id:          big.NewInt(4),
 			Bucket:      nil,
 		}
 
@@ -95,10 +94,10 @@ func main() {
 			Successor:   nil,
 			Next:        0,
 			R:           0,
-			Id:          []byte("temp"),
+			Id:          big.NewInt(666),
 			Bucket:      nil,
 		}
-		nodeTemp.find([]byte("69"), node1)
+		nodeTemp.find(*big.NewInt(69), node1)
 	}
 
 	// Init for listening
@@ -127,10 +126,9 @@ func main() {
 	}
 }
 
-func hash(ipPort string) []byte {
+func hash(ipPort string) *big.Int {
 	h := sha1.New()
-	//return hex.EncodeToString(h.Sum([]byte(ipPort)))[:m]
-	return h.Sum([]byte(ipPort))[:m]
+	return new(big.Int).SetBytes(h.Sum([]byte(ipPort))[:m])
 }
 
 func checkError(err error) {
@@ -150,15 +148,13 @@ func Lookup() {
 
 func PrintState() {
 	fmt.Println("+-+-+-+-+-+ Node info +-+-+-+-+-+-\n")
-	idInt := (&big.Int{}).SetBytes(myNode.Id)
-	fmt.Println("   ID:", idInt, "\n   IP/port: "+myNode.Address)
+	fmt.Println("   ID:", myNode.Id, "\n   IP/port: "+myNode.Address)
 
 	if len(myNode.Successor) > 0 {
 		fmt.Println("\n+-+-+-+-+-+ Successors info +-+-+-+-+-+-")
 		for i, suc := range myNode.Successor {
-			idInt = (&big.Int{}).SetBytes(suc.Id)
 			fmt.Println("\n   Successor node", i, "info -------------")
-			fmt.Println("    ID:", idInt, "\n    IP/port: "+suc.Address)
+			fmt.Println("    ID:", myNode.Id, "\n    IP/port: "+suc.Address)
 			fmt.Println("   ------------------------------------")
 		}
 	} else {
@@ -168,9 +164,8 @@ func PrintState() {
 	if len(myNode.FingerTable) > 0 {
 		fmt.Println("\n+-+-+-+-+-+ Fingertable info +-+-+-+-+-+-")
 		for i, finger := range myNode.FingerTable {
-			idInt = (&big.Int{}).SetBytes(finger.Id)
 			fmt.Println("\n   Finger node", i, "info -------------")
-			fmt.Println("    ID:", idInt, "\n    IP/port: "+finger.Address)
+			fmt.Println("    ID:", myNode.Id, "\n    IP/port: "+finger.Address)
 			fmt.Println("   ------------------------------------")
 		}
 	} else {

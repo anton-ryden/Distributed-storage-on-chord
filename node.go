@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"math/big"
 )
@@ -17,7 +16,7 @@ type Node struct {
 	Successor   []*Node
 	Next        int
 	R           int
-	Id          []byte
+	Id          *big.Int
 
 	Bucket map[Key]string
 }
@@ -25,15 +24,14 @@ type Node struct {
 func (node Node) print() {
 	fmt.Println("\n+-+-+-+-+-+- Node DETAILS +-+-+-+-+-+-+")
 	fmt.Println("Adress: " + node.Address)
-	idInt := (&big.Int{}).SetBytes(node.Id)
-	fmt.Printf("ID: %d\n", idInt)
+	fmt.Printf("ID: %d\n", &node.Id)
 	fmt.Println("Number of Successors: ", len(node.Successor))
 }
 
 // create a new Chord ring.
 func (node *Node) create() {
 	node.Predecessor = nil
-	node.Successor = append(node.Successor, node)
+	node.Successor = append(node.Successor, &Node{Address: node.Address, R: node.R, Id: node.Id})
 }
 
 // join a Chord ring containing node n′.
@@ -44,10 +42,10 @@ func (node *Node) join(joinNode Node) {
 	node.Successor = append(node.Successor, &joinNode)
 }
 
-func (node Node) find(id []byte, start Node) Node {
+func (node Node) find(id big.Int, start Node) Node {
 	found, nextNode := false, start
 	for found == false {
-		found, nextNode = start.findSuccessor(id)
+		found, nextNode = nextNode.findSuccessor(id)
 	}
 
 	if found == true {
@@ -100,13 +98,13 @@ func (node Node) checkPredecessor(){
 
 // ask node n to find the successor of id
 // or a better node to continue the search with
-func (node Node) findSuccessor(id []byte) (bool, Node) {
-	if bytes.Equal(id, node.Id) {
+func (node Node) findSuccessor(id big.Int) (bool, Node) {
+	if id.Cmp(node.Id) == 0 {
 		return true, node
 	}
 
 	for _, suc := range node.Successor {
-		if bytes.Equal(id, suc.Id) {
+		if id.Cmp(suc.Id) == 0 {
 			return true, *suc
 		}
 	}
@@ -114,7 +112,7 @@ func (node Node) findSuccessor(id []byte) (bool, Node) {
 }
 
 // search the local table for the highest predecessor of id
-func (node Node) closestPrecedingNode(id []byte) Node {
+func (node Node) closestPrecedingNode(id big.Int) Node {
 	for i := node.R; i > 1; i-- {
 		_, iNode := node.findSuccessor(id)
 		if node.FingerTable[i] == &node || node.FingerTable[i] == &iNode {
