@@ -4,6 +4,7 @@ import (
 	"github.com/akamensky/argparse"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 )
 
@@ -43,8 +44,16 @@ func setupArguments() {
 
 	// Check so if ja is set jp is set and vice versa
 	if *ja != "" && *jp == 0 || *ja != "" && *jp == 0 {
-		log.Println("If ja is set jp need to be set and vice versa")
+		log.Fatalln("If ja is set jp need to be set and vice versa")
 		os.Exit(1)
+	}
+
+	// Check so i argument only contains valid characters [0-9a-fA-F]
+	if *i != "" {
+		var isLetterAndNumbers = regexp.MustCompile(`^[0-9a-zA-Z]+$`).MatchString
+		if !isLetterAndNumbers(*i) {
+			log.Fatalln("The i argument can only contain [0-9a-fA-F]")
+		}
 	}
 }
 

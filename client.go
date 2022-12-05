@@ -10,25 +10,27 @@ import (
 var a, ja, i *string
 var p, jp, ts, tff, tcp, r *int
 
-type Ring int
-
 var myNode Node
 
 // Main
 func main() {
 	// Setup arguments
 	setupArguments()
+	myNode = newNode(*a, *p, *i, *r)
 
 	if *ja == "" {
 		myNode.create()
-
 	} else {
+		joinNode := newNode(*ja, *jp, "", *r)
+		//sucOfJoin := newNode("127.0.0.1", 4002, "69", *r)
+		//joinNode.Successor = append(joinNode.Successor, &sucOfJoin)
+
+		myNode.join(joinNode)
 
 	}
-	myNode = newNode(*a, *p, *i, *r)
 
 	// Init for listening
-	//initListen()
+	initListen()
 
 	// Init for reading stdin
 	scanner := bufio.NewScanner((os.Stdin))
@@ -41,7 +43,7 @@ func main() {
 
 	//Main for loop
 	for {
-		//go listen() // Go routine for listening to traffic
+		go listen() // Go routine for listening to traffic
 
 		scanner.Scan()
 		txt := scanner.Text()
@@ -50,6 +52,7 @@ func main() {
 				element.(func())()
 			}
 		}
+
 	}
 }
 

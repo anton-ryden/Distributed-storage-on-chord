@@ -3,7 +3,9 @@ package main
 import (
 	"crypto/sha1"
 	"fmt"
+	"log"
 	"math/big"
+	"net/rpc"
 	"strconv"
 )
 
@@ -39,7 +41,6 @@ func newNode(ip string, port int, iArg string, r int) Node {
 	id := hash(iArg)
 
 	id = new(big.Int).Mod(id, hashMod)
-	fmt.Println("ID: ", id)
 
 	return Node{Address: addr, R: r, Id: id}
 }
@@ -64,10 +65,10 @@ func (node *Node) create() {
 
 // join a Chord ring containing node n′.
 func (node *Node) join(joinNode Node) {
+	log.Println("Joining: " + joinNode.Address + "\tLooking for id: ")
 	node.Predecessor = nil
-	//successors := joinNode.findSuccessor(joinNode.Id)
-	//node.Successor = append(node.Successor, &successors)
-	node.Successor = append(node.Successor, &joinNode)
+	successors := joinNode.findSuccessorRpc(*node.Id)
+	node.Successor = append(node.Successor, successors)
 }
 
 func (node Node) find(id big.Int, start Node) Node {
@@ -127,10 +128,6 @@ func (node Node) checkPredecessor(){
 // ask node n to find the successor of id
 // or a better node to continue the search with
 func (node Node) findSuccessor(id big.Int) (bool, Node) {
-	if id.Cmp(node.Id) == 0 {
-		return true, node
-	}
-
 	for _, suc := range node.Successor {
 		if id.Cmp(suc.Id) == 0 {
 			return true, *suc
@@ -158,4 +155,14 @@ func (node Node) jump(fingerentry int) *big.Int {
 	sum := new(big.Int).Add(n, jump)
 
 	return new(big.Int).Mod(sum, hashMod)
+}
+
+func (node Node) findSuccessorRpc(id big.Int) *Node {
+	fmt.Println("Trying to join: " + string(node.Address))
+	client, err := rpc.Dial("tcp", string(node.Address))
+	checkError(err)
+
+	var reply Node
+	err = client.Call("Ring.FindSuccessor", &id, &reply)
+	return &reply
 }

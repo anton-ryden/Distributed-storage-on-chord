@@ -2,39 +2,26 @@ package main
 
 import (
 	"log"
+	"math/big"
 	"net"
 	"net/rpc"
+	"strconv"
 )
 
 var listener *net.TCPListener
 
-func (r *Ring) Join(node Node, reply *int) error {
-	node.print()
-	//myNode.join(args.node)
-	//myNode.print()
+type Ring int
+
+func (t *Ring) FindSuccessor(id *big.Int, reply *Node) error {
+	//_, retNode := myNode.findSuccessor(*id)
+	*reply = Node{Address: "Testing"}
 	return nil
-}
-
-func (r *Ring) find(idToFind string, reply *string) {
-	//return myNode.find(idToFind)
-}
-
-func find(address string, idToFind string) {
-	client, err := rpc.Dial("tcp", address)
-	checkError(err)
-
-	var reply string
-	err = client.Call("Ring.Find", idToFind, &reply)
-	myNode.print()
-	println(reply)
-	checkError(err)
 }
 
 func initListen() {
 	ring := new(Ring)
 	rpc.Register(ring)
-
-	tcpAddr, err := net.ResolveTCPAddr("tcp", string(myNode.Address))
+	tcpAddr, err := net.ResolveTCPAddr("tcp", ":"+strconv.Itoa(*p))
 	checkError(err)
 
 	listener, err = net.ListenTCP("tcp", tcpAddr)
