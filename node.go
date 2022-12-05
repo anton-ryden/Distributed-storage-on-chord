@@ -24,7 +24,7 @@ type Node struct {
 func (node Node) print() {
 	fmt.Println("\n+-+-+-+-+-+- Node DETAILS +-+-+-+-+-+-+")
 	fmt.Println("Adress: " + node.Address)
-	fmt.Printf("ID: %d\n", &node.Id)
+	fmt.Printf("ID: %d\n", node.Id)
 	fmt.Println("Number of Successors: ", len(node.Successor))
 }
 
