@@ -1,9 +1,15 @@
 package main
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"math/big"
 )
+
+const keySize = sha1.Size * 8
+
+var two = big.NewInt(2)
+var hashMod = new(big.Int).Exp(big.NewInt(2), big.NewInt(keySize), nil)
 
 type Key string
 
@@ -121,4 +127,13 @@ func (node Node) closestPrecedingNode(id big.Int) Node {
 		}
 	}
 	return *node.Successor[0]
+}
+
+func (node Node) jump(fingerentry int) *big.Int {
+	n := hash(string(node.Address))
+	fingerentryminus1 := big.NewInt(int64(fingerentry) - 1)
+	jump := new(big.Int).Exp(two, fingerentryminus1, nil)
+	sum := new(big.Int).Add(n, jump)
+
+	return new(big.Int).Mod(sum, hashMod)
 }

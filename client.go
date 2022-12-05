@@ -34,7 +34,6 @@ func main() {
 
 	if *ja == "" {
 		myNode.create()
-		myNode.print()
 
 	} else {
 		node1 := Node{
