@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
@@ -25,12 +24,18 @@ func main() {
 
 	// Error handling in arguments file, so we only need to check if ja is set
 	addr := NodeAddress(*a + ":" + strconv.Itoa(*p))
-	id := hash(*a + strconv.Itoa(*p))
+	if *i == "" {
+		*i = *a + strconv.Itoa(*p)
+	}
+
+	id := hash(*i)
+
 	myNode = Node{Address: addr, R: *r, Id: id}
 
 	if *ja == "" {
 		myNode.create()
 		myNode.print()
+
 	} else {
 		node1 := Node{
 			Address:     "node1",
@@ -39,7 +44,7 @@ func main() {
 			Successor:   nil,
 			Next:        0,
 			R:           0,
-			Id:          "1",
+			Id:          []byte("1"),
 			Bucket:      nil,
 		}
 		node2 := Node{
@@ -49,7 +54,7 @@ func main() {
 			Successor:   nil,
 			Next:        0,
 			R:           0,
-			Id:          "2",
+			Id:          []byte("2"),
 			Bucket:      nil,
 		}
 		node3 := Node{
@@ -59,7 +64,7 @@ func main() {
 			Successor:   nil,
 			Next:        0,
 			R:           0,
-			Id:          "3",
+			Id:          []byte("3"),
 			Bucket:      nil,
 		}
 		node4 := Node{
@@ -69,9 +74,10 @@ func main() {
 			Successor:   nil,
 			Next:        0,
 			R:           0,
-			Id:          "4",
+			Id:          []byte("4"),
 			Bucket:      nil,
 		}
+
 		node1.Successor = append(node1.Successor, &node2)
 		node1.Successor = append(node1.Successor, &node3)
 		node2.Successor = append(node2.Successor, &node3)
@@ -88,10 +94,10 @@ func main() {
 			Successor:   nil,
 			Next:        0,
 			R:           0,
-			Id:          "temp",
+			Id:          []byte("temp"),
 			Bucket:      nil,
 		}
-		nodeTemp.find("69", node1)
+		nodeTemp.find([]byte("69"), node1)
 	}
 
 	// Init for listening
@@ -120,9 +126,10 @@ func main() {
 	}
 }
 
-func hash(ipPort string) string {
+func hash(ipPort string) []byte {
 	h := sha1.New()
-	return hex.EncodeToString(h.Sum([]byte(ipPort)))[:m]
+	//return hex.EncodeToString(h.Sum([]byte(ipPort)))[:m]
+	return h.Sum([]byte(ipPort))[:m]
 }
 
 func checkError(err error) {

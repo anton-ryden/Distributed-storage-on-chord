@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"math/big"
 )
 
 type Key string
@@ -15,7 +17,7 @@ type Node struct {
 	Successor   []*Node
 	Next        int
 	R           int
-	Id          string
+	Id          []byte
 
 	Bucket map[Key]string
 }
@@ -23,7 +25,8 @@ type Node struct {
 func (node Node) print() {
 	fmt.Println("\n+-+-+-+-+-+- Node DETAILS +-+-+-+-+-+-+")
 	fmt.Println("Adress: " + node.Address)
-	fmt.Println("ID: " + node.Id)
+	idInt := (&big.Int{}).SetBytes(node.Id)
+	fmt.Printf("ID: %d\n", idInt)
 	fmt.Println("Number of Successors: ", len(node.Successor))
 }
 
@@ -41,7 +44,7 @@ func (node *Node) join(joinNode Node) {
 	node.Successor = append(node.Successor, &joinNode)
 }
 
-func (node Node) find(id string, start Node) Node {
+func (node Node) find(id []byte, start Node) Node {
 	found, nextNode := false, start
 	for found == false {
 		found, nextNode = start.findSuccessor(id)
@@ -97,15 +100,13 @@ func (node Node) checkPredecessor(){
 
 // ask node n to find the successor of id
 // or a better node to continue the search with
-func (node Node) findSuccessor(id string) (bool, Node) {
-	println("id: " + node.Id)
-	if id == node.Id {
+func (node Node) findSuccessor(id []byte) (bool, Node) {
+	if bytes.Equal(id, node.Id) {
 		return true, node
 	}
 
 	for _, suc := range node.Successor {
-		println("id: " + suc.Id)
-		if id == suc.Id {
+		if bytes.Equal(id, suc.Id) {
 			return true, *suc
 		}
 	}
@@ -113,7 +114,7 @@ func (node Node) findSuccessor(id string) (bool, Node) {
 }
 
 // search the local table for the highest predecessor of id
-func (node Node) closestPrecedingNode(id string) Node {
+func (node Node) closestPrecedingNode(id []byte) Node {
 	for i := node.R; i > 1; i-- {
 		_, iNode := node.findSuccessor(id)
 		if node.FingerTable[i] == &node || node.FingerTable[i] == &iNode {
