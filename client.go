@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/sha1"
 	"fmt"
+	"math/big"
 	"os"
 	"strconv"
 )
@@ -149,13 +150,15 @@ func Lookup() {
 
 func PrintState() {
 	fmt.Println("+-+-+-+-+-+ Node info +-+-+-+-+-+-\n")
-	fmt.Println("   ID:", myNode.Id, "\n   IP/port: "+myNode.Address)
+	idInt := (&big.Int{}).SetBytes(myNode.Id)
+	fmt.Println("   ID:", idInt, "\n   IP/port: "+myNode.Address)
 
 	if len(myNode.Successor) > 0 {
 		fmt.Println("\n+-+-+-+-+-+ Successors info +-+-+-+-+-+-")
 		for i, suc := range myNode.Successor {
+			idInt = (&big.Int{}).SetBytes(suc.Id)
 			fmt.Println("\n   Successor node", i, "info -------------")
-			fmt.Println("    ID:", suc.Id, "\n    IP/port: "+suc.Address)
+			fmt.Println("    ID:", idInt, "\n    IP/port: "+suc.Address)
 			fmt.Println("   ------------------------------------")
 		}
 	} else {
@@ -165,8 +168,9 @@ func PrintState() {
 	if len(myNode.FingerTable) > 0 {
 		fmt.Println("\n+-+-+-+-+-+ Fingertable info +-+-+-+-+-+-")
 		for i, finger := range myNode.FingerTable {
+			idInt = (&big.Int{}).SetBytes(finger.Id)
 			fmt.Println("\n   Finger node", i, "info -------------")
-			fmt.Println("    ID:", finger.Id, "\n    IP/port: "+finger.Address)
+			fmt.Println("    ID:", idInt, "\n    IP/port: "+finger.Address)
 			fmt.Println("   ------------------------------------")
 		}
 	} else {
