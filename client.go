@@ -12,6 +12,7 @@ import (
 // Set with information from arguments
 var a, ja, i *string
 var p, jp, ts, tff, tcp, r *int
+var m int = 40
 
 type Ring int
 
@@ -121,7 +122,7 @@ func main() {
 
 func hash(ipPort string) string {
 	h := sha1.New()
-	return hex.EncodeToString(h.Sum([]byte(ipPort)))[:40]
+	return hex.EncodeToString(h.Sum([]byte(ipPort)))[:m]
 }
 
 func checkError(err error) {
