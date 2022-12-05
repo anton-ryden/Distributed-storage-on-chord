@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/sha1"
 	"fmt"
+	"math"
 	"math/big"
 	"os"
 	"strconv"
@@ -12,7 +13,7 @@ import (
 // Set with information from arguments
 var a, ja, i *string
 var p, jp, ts, tff, tcp, r *int
-var m int = 40
+var m int = 10
 
 type Ring int
 
@@ -30,6 +31,8 @@ func main() {
 	}
 
 	id := hash(*i)
+	mod := int64(math.Pow(10, float64(m)))
+	id = new(big.Int).Mod(id, big.NewInt(mod))
 	myNode = Node{Address: addr, R: *r, Id: id}
 
 	if *ja == "" {
@@ -85,22 +88,13 @@ func main() {
 		node3.Successor = append(node3.Successor, &node1)
 		node4.Successor = append(node4.Successor, &node1)
 		node4.Successor = append(node4.Successor, &node2)
+		myNode.Successor = append(node1.Successor, &node3)
 
-		nodeTemp := Node{
-			Address:     "temp",
-			FingerTable: nil,
-			Predecessor: nil,
-			Successor:   nil,
-			Next:        0,
-			R:           0,
-			Id:          big.NewInt(666),
-			Bucket:      nil,
-		}
-		nodeTemp.find(*big.NewInt(69), node1)
+		//nodeTemp.find(*big.NewInt(69), node1)
 	}
 
 	// Init for listening
-	initListen()
+	//initListen()
 
 	// Init for reading stdin
 	scanner := bufio.NewScanner((os.Stdin))
@@ -113,7 +107,7 @@ func main() {
 
 	//Main for loop
 	for {
-		go listen() // Go routine for listening to traffic
+		//go listen() // Go routine for listening to traffic
 
 		scanner.Scan()
 		txt := scanner.Text()
@@ -127,7 +121,7 @@ func main() {
 
 func hash(ipPort string) *big.Int {
 	h := sha1.New()
-	return new(big.Int).SetBytes(h.Sum([]byte(ipPort))[:m])
+	return new(big.Int).SetBytes(h.Sum([]byte(ipPort)))
 }
 
 func checkError(err error) {
