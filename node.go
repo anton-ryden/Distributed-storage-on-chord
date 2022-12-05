@@ -4,9 +4,10 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"math/big"
+	"strconv"
 )
 
-const keySize = sha1.Size * 8
+const keySize = sha1.Size * 9
 
 var two = big.NewInt(2)
 var hashMod = new(big.Int).Exp(big.NewInt(2), big.NewInt(keySize), nil)
@@ -25,6 +26,27 @@ type Node struct {
 	Id          *big.Int
 
 	Bucket map[Key]string
+}
+
+func newNode(ip string, port int, iArg string, r int) Node {
+	// Error handling in arguments file, so we only need to check if ja is set
+	addr := NodeAddress(ip + ":" + strconv.Itoa(port))
+
+	if iArg == "" {
+		iArg = ip + strconv.Itoa(port)
+	}
+
+	id := hash(iArg)
+
+	id = new(big.Int).Mod(id, hashMod)
+	fmt.Println("ID: ", id)
+
+	return Node{Address: addr, R: r, Id: id}
+}
+
+func hash(ipPort string) *big.Int {
+	h := sha1.New()
+	return new(big.Int).SetBytes(h.Sum([]byte(ipPort)))
 }
 
 func (node Node) print() {

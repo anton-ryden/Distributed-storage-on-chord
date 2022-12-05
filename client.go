@@ -2,18 +2,13 @@ package main
 
 import (
 	"bufio"
-	"crypto/sha1"
 	"fmt"
-	"math"
-	"math/big"
 	"os"
-	"strconv"
 )
 
 // Set with information from arguments
 var a, ja, i *string
 var p, jp, ts, tff, tcp, r *int
-var m int = 10
 
 type Ring int
 
@@ -24,74 +19,13 @@ func main() {
 	// Setup arguments
 	setupArguments()
 
-	// Error handling in arguments file, so we only need to check if ja is set
-	addr := NodeAddress(*a + ":" + strconv.Itoa(*p))
-	if *i == "" {
-		*i = *a + strconv.Itoa(*p)
-	}
-
-	id := hash(*i)
-	mod := int64(math.Pow(10, float64(m)))
-	id = new(big.Int).Mod(id, big.NewInt(mod))
-	myNode = Node{Address: addr, R: *r, Id: id}
-
 	if *ja == "" {
 		myNode.create()
 
 	} else {
-		node1 := Node{
-			Address:     "node1",
-			FingerTable: nil,
-			Predecessor: nil,
-			Successor:   nil,
-			Next:        0,
-			R:           0,
-			Id:          big.NewInt(1),
-			Bucket:      nil,
-		}
-		node2 := Node{
-			Address:     "node2",
-			FingerTable: nil,
-			Predecessor: nil,
-			Successor:   nil,
-			Next:        0,
-			R:           0,
-			Id:          big.NewInt(2),
-			Bucket:      nil,
-		}
-		node3 := Node{
-			Address:     "node3",
-			FingerTable: nil,
-			Predecessor: nil,
-			Successor:   nil,
-			Next:        0,
-			R:           0,
-			Id:          big.NewInt(3),
-			Bucket:      nil,
-		}
-		node4 := Node{
-			Address:     "node4",
-			FingerTable: nil,
-			Predecessor: nil,
-			Successor:   nil,
-			Next:        0,
-			R:           0,
-			Id:          big.NewInt(4),
-			Bucket:      nil,
-		}
 
-		node1.Successor = append(node1.Successor, &node2)
-		node1.Successor = append(node1.Successor, &node3)
-		node2.Successor = append(node2.Successor, &node3)
-		node2.Successor = append(node2.Successor, &node4)
-		node3.Successor = append(node3.Successor, &node4)
-		node3.Successor = append(node3.Successor, &node1)
-		node4.Successor = append(node4.Successor, &node1)
-		node4.Successor = append(node4.Successor, &node2)
-		myNode.Successor = append(node1.Successor, &node3)
-
-		//nodeTemp.find(*big.NewInt(69), node1)
 	}
+	myNode = newNode(*a, *p, *i, *r)
 
 	// Init for listening
 	//initListen()
@@ -117,11 +51,6 @@ func main() {
 			}
 		}
 	}
-}
-
-func hash(ipPort string) *big.Int {
-	h := sha1.New()
-	return new(big.Int).SetBytes(h.Sum([]byte(ipPort)))
 }
 
 func checkError(err error) {
