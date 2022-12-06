@@ -1,5 +1,7 @@
 Okey to use argparse? not standard library
+Should fixFingers fix all entries when called?
 
+r more successors
 test:
 Arg outside of range
 Arg not present

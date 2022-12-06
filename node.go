@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"log"
-	"math"
 	"math/big"
 	"strconv"
 )
@@ -72,7 +71,7 @@ func (node *Node) join(joinNode Node) {
 	node.Predecessor = nil
 	found, successor, maxSteps := false, &Node{}, 5
 
-	if !found && maxSteps > 0 {
+	for !found && maxSteps > 0 {
 		found, successor = joinNode.findSuccessorRpc(node.Id)
 		maxSteps--
 	}
@@ -99,10 +98,10 @@ func (node Node) find(id []byte, start Node) Node {
 func (node Node) stabilize() {
 	suc := node.Successor[0]
 	x := suc.Predecessor
-	if x == &node || &node == suc {
-		node.Successor = append(node.Successor, x)
+	if bytes.Equal(x.Id, node.Id) || bytes.Equal(node.Id, suc.Id) {
+		node.Successor[0] = x
 	}
-	suc.notify(node)
+	node.Successor[0].notifyRpc(node)
 }
 
 // n′ thinks it might be our predecessor.
@@ -112,26 +111,26 @@ func (node Node) notify(n Node) {
 	}
 }
 
-
 // called periodically. refreshes finger table entries.
 // next stores the index of the next finger to fix.
 func (node Node) fixFingers() {
-	for i := 1; i < len(node.FingerTable); i++{
+	for i := 1; i < m; i++ {
 		if i > m {
 			i = 1
 		}
-		_, suc := node.findSuccessor(node.jump(i))
-		node.FingerTable[i] = &suc
+		found, suc := node.findSuccessor(node.jump(i))
+		if found {
+			node.FingerTable[i] = &suc
+		}
 	}
 }
 
 // called periodically. checks whether predecessor has failed.
-func (node Node) checkPredecessor(){
-	if (node.predecessor has failed){
-		node.predecessor = nil;
+func (node Node) checkPredecessor() {
+	if !node.Predecessor.checkAliveRpc() {
+		node.Predecessor = nil
 	}
 }
-
 
 // ask node n to find the successor of id
 // or a better node to continue the search with

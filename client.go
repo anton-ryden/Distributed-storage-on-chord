@@ -24,7 +24,6 @@ func main() {
 		joinNode := newNode(*ja, *jp, "", *r)
 		//sucOfJoin := newNode("127.0.0.1", 4002, "69", *r)
 		//joinNode.Successor = append(joinNode.Successor, &sucOfJoin)
-
 		myNode.join(joinNode)
 
 	}
