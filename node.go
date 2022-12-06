@@ -116,14 +116,13 @@ func (node Node) notify(n Node) {
 // called periodically. refreshes finger table entries.
 // next stores the index of the next finger to fix.
 func (node Node) fixFingers() {
-	node.Next = node.Next + 1
-	if node.Next > m {
-		node.Next = 1
+	for i := 1; i < len(node.FingerTable); i++{
+		if i > m {
+			i = 1
+		}
+		_, suc := node.findSuccessor(node.jump(i))
+		node.FingerTable[i] = &suc
 	}
-
-	calc := node.Id + int(math.Pow(float64(2), float64(node.Next-1)))
-	_, suc := node.findSuccessor(calc)
-	node.FingerTable[node.Next] = &suc
 }
 
 // called periodically. checks whether predecessor has failed.
@@ -157,10 +156,11 @@ func (node Node) closestPrecedingNode(id []byte) Node {
 	return *node.Successor[0]
 }
 
-func (node Node) jump(fingerentry int) *big.Int {
+func (node Node) jump(fingerentry int) []byte {
 	fingerentryminus1 := big.NewInt(int64(fingerentry) - 1)
 	jump := new(big.Int).Exp(two, fingerentryminus1, nil)
 	n := new(big.Int).SetBytes(node.Id)
 	sum := new(big.Int).Add(n, jump)
-	return new(big.Int).Mod(sum, hashMod)
+	result := new(big.Int).Mod(sum, hashMod)
+	return []byte(result.String())
 }
