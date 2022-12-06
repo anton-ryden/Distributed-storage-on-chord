@@ -5,14 +5,15 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"log"
+	"math"
 	"math/big"
 	"strconv"
 )
 
-const keySize = sha1.Size * 9
+const m = sha1.Size * 9
 
 var two = big.NewInt(2)
-var hashMod = new(big.Int).Exp(big.NewInt(2), big.NewInt(keySize), nil)
+var hashMod = new(big.Int).Exp(big.NewInt(2), big.NewInt(m), nil)
 
 type Key string
 
@@ -69,7 +70,7 @@ func (node *Node) create() {
 func (node *Node) join(joinNode Node) {
 	log.Println("Joining: " + joinNode.Address + "\tLooking for id: ")
 	node.Predecessor = nil
-	found, successor, maxSteps := false, &Node{}, 2
+	found, successor, maxSteps := false, &Node{}, 5
 
 	if !found && maxSteps > 0 {
 		found, successor = joinNode.findSuccessorRpc(node.Id)
@@ -111,7 +112,7 @@ func (node Node) notify(n Node) {
 	}
 }
 
-/*
+
 // called periodically. refreshes finger table entries.
 // next stores the index of the next finger to fix.
 func (node Node) fixFingers() {
@@ -124,14 +125,14 @@ func (node Node) fixFingers() {
 	suc := node.findSuccessor(calc)
 	node.fingerTable[node.next] = &suc
 }
-/*
+
 // called periodically. checks whether predecessor has failed.
 func (node Node) checkPredecessor(){
 	if (node.predecessor has failed){
 		node.predecessor = nil;
 	}
 }
-*/
+
 
 // ask node n to find the successor of id
 // or a better node to continue the search with
@@ -141,14 +142,14 @@ func (node Node) findSuccessor(id []byte) (bool, Node) {
 			return true, *suc
 		}
 	}
+
 	return false, node.closestPrecedingNode(id)
 }
 
 // search the local table for the highest predecessor of id
 func (node Node) closestPrecedingNode(id []byte) Node {
-	for i := node.R; i > 1; i-- {
-		_, iNode := node.Successor[i]
-		if node.FingerTable[i] == &node || node.FingerTable[i] == &iNode {
+	for i := m; i > 1; i-- {
+		if bytes.Equal(node.FingerTable[i].Id, id) {
 			iFinger := node.FingerTable[i]
 			return *iFinger
 		}
