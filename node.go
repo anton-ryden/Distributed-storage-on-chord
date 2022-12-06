@@ -116,14 +116,14 @@ func (node Node) notify(n Node) {
 // called periodically. refreshes finger table entries.
 // next stores the index of the next finger to fix.
 func (node Node) fixFingers() {
-	node.next = node.next + 1
-	if node.next > node.m {
-		node.next = 1
+	node.Next = node.Next + 1
+	if node.Next > m {
+		node.Next = 1
 	}
 
-	calc := node.id + int(math.Pow(float64(2), float64(node.next-1)))
-	suc := node.findSuccessor(calc)
-	node.fingerTable[node.next] = &suc
+	calc := node.Id + int(math.Pow(float64(2), float64(node.Next-1)))
+	_, suc := node.findSuccessor(calc)
+	node.FingerTable[node.Next] = &suc
 }
 
 // called periodically. checks whether predecessor has failed.
