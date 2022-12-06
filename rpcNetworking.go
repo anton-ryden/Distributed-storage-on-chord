@@ -1,8 +1,8 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"math/big"
 	"net"
 	"net/rpc"
 	"strconv"
@@ -12,9 +12,25 @@ var listener *net.TCPListener
 
 type Ring int
 
-func (t *Ring) FindSuccessor(id *big.Int, reply *Node) error {
-	//_, retNode := myNode.findSuccessor(*id)
-	*reply = Node{Address: "Testing"}
+type RpcReply struct {
+	Found bool
+	Node  Node
+}
+
+func (node Node) findSuccessorRpc(id []byte) (bool, *Node) {
+	fmt.Println("Trying to join: " + string(node.Address))
+	client, err := rpc.Dial("tcp", string(node.Address))
+	checkError(err)
+
+	var reply RpcReply
+
+	err = client.Call("Ring.FindSuccessor", &id, &reply)
+	return reply.Found, &reply.Node
+}
+
+func (t *Ring) FindSuccessor(id []byte, reply *RpcReply) error {
+	found, retNode := myNode.findSuccessor(id)
+	*reply = RpcReply{Found: found, Node: retNode}
 	return nil
 }
 

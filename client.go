@@ -72,26 +72,27 @@ func Lookup() {
 }
 
 func PrintState() {
+
 	fmt.Println("+-+-+-+-+-+ Node info +-+-+-+-+-+-\n")
-	fmt.Println("   ID:", myNode.Id, "\n   IP/port: "+myNode.Address)
+	fmt.Println("\tID: ", string(myNode.Id), "\n\tIP/port: ", myNode.Address)
 
 	if len(myNode.Successor) > 0 {
-		fmt.Println("\n+-+-+-+-+-+ Successors info +-+-+-+-+-+-")
+		fmt.Println("\n+-+-+-+-+-+-+ Successors info +-+-+-+-+-+--+")
 		for i, suc := range myNode.Successor {
-			fmt.Println("\n   Successor node", i, "info -------------")
-			fmt.Println("    ID:", suc.Id, "\n    IP/port: "+suc.Address)
-			fmt.Println("   ------------------------------------")
+			fmt.Println("\n\t-----Successor node", i, "info-----")
+			fmt.Println("\tID: ", string(suc.Id), "\n\tIP/port: ", suc.Address)
+			fmt.Println("\t-------------------------------")
 		}
 	} else {
 		fmt.Println("\nNo Successors Found")
 	}
 
 	if len(myNode.FingerTable) > 0 {
-		fmt.Println("\n+-+-+-+-+-+ Fingertable info +-+-+-+-+-+-")
+		fmt.Println("\n+-+-+-+-+-+-+ Fingertable info +-+-+-+-+-+--+")
 		for i, finger := range myNode.FingerTable {
-			fmt.Println("\n   Finger node", i, "info -------------")
-			fmt.Println("    ID:", finger.Id, "\n    IP/port: "+finger.Address)
-			fmt.Println("   ------------------------------------")
+			fmt.Println("\n\t-----Finger node", i, "info-----")
+			fmt.Println("\tID: ", string(finger.Id), "\n\tIP/port: ", finger.Address)
+			fmt.Println("\t-------------------------------")
 		}
 	} else {
 		fmt.Println("\nFingertable Empty")

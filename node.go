@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"fmt"
 	"log"
 	"math/big"
-	"net/rpc"
 	"strconv"
 )
 
@@ -25,7 +25,7 @@ type Node struct {
 	Successor   []*Node
 	Next        int
 	R           int
-	Id          *big.Int
+	Id          []byte
 
 	Bucket map[Key]string
 }
@@ -34,20 +34,22 @@ func newNode(ip string, port int, iArg string, r int) Node {
 	// Error handling in arguments file, so we only need to check if ja is set
 	addr := NodeAddress(ip + ":" + strconv.Itoa(port))
 
+	// If i argument is used we set the id to that
+	var id []byte
 	if iArg == "" {
 		iArg = ip + strconv.Itoa(port)
+		id = hash(iArg)
+	} else {
+		id = []byte(iArg)
 	}
-
-	id := hash(iArg)
-
-	id = new(big.Int).Mod(id, hashMod)
 
 	return Node{Address: addr, R: r, Id: id}
 }
 
-func hash(ipPort string) *big.Int {
+func hash(ipPort string) []byte {
 	h := sha1.New()
-	return new(big.Int).SetBytes(h.Sum([]byte(ipPort)))
+	ha := new(big.Int).SetBytes(h.Sum([]byte(ipPort)))
+	return []byte(ha.String())
 }
 
 func (node Node) print() {
@@ -67,11 +69,17 @@ func (node *Node) create() {
 func (node *Node) join(joinNode Node) {
 	log.Println("Joining: " + joinNode.Address + "\tLooking for id: ")
 	node.Predecessor = nil
-	successors := joinNode.findSuccessorRpc(*node.Id)
-	node.Successor = append(node.Successor, successors)
+	found, successor, maxSteps := false, &Node{}, 2
+
+	if !found && maxSteps > 0 {
+		found, successor = joinNode.findSuccessorRpc(node.Id)
+		maxSteps--
+	}
+
+	node.Successor = append(node.Successor, successor)
 }
 
-func (node Node) find(id big.Int, start Node) Node {
+func (node Node) find(id []byte, start Node) Node {
 	found, nextNode := false, start
 	for found == false {
 		found, nextNode = nextNode.findSuccessor(id)
@@ -127,9 +135,9 @@ func (node Node) checkPredecessor(){
 
 // ask node n to find the successor of id
 // or a better node to continue the search with
-func (node Node) findSuccessor(id big.Int) (bool, Node) {
+func (node Node) findSuccessor(id []byte) (bool, Node) {
 	for _, suc := range node.Successor {
-		if id.Cmp(suc.Id) == 0 {
+		if bytes.Equal(id, suc.Id) {
 			return true, *suc
 		}
 	}
@@ -137,9 +145,9 @@ func (node Node) findSuccessor(id big.Int) (bool, Node) {
 }
 
 // search the local table for the highest predecessor of id
-func (node Node) closestPrecedingNode(id big.Int) Node {
+func (node Node) closestPrecedingNode(id []byte) Node {
 	for i := node.R; i > 1; i-- {
-		_, iNode := node.findSuccessor(id)
+		_, iNode := node.Successor[i]
 		if node.FingerTable[i] == &node || node.FingerTable[i] == &iNode {
 			iFinger := node.FingerTable[i]
 			return *iFinger
@@ -149,20 +157,9 @@ func (node Node) closestPrecedingNode(id big.Int) Node {
 }
 
 func (node Node) jump(fingerentry int) *big.Int {
-	n := hash(string(node.Address))
 	fingerentryminus1 := big.NewInt(int64(fingerentry) - 1)
 	jump := new(big.Int).Exp(two, fingerentryminus1, nil)
+	n := new(big.Int).SetBytes(node.Id)
 	sum := new(big.Int).Add(n, jump)
-
 	return new(big.Int).Mod(sum, hashMod)
-}
-
-func (node Node) findSuccessorRpc(id big.Int) *Node {
-	fmt.Println("Trying to join: " + string(node.Address))
-	client, err := rpc.Dial("tcp", string(node.Address))
-	checkError(err)
-
-	var reply Node
-	err = client.Call("Ring.FindSuccessor", &id, &reply)
-	return &reply
 }
