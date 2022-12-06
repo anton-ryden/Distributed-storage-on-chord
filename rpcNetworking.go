@@ -47,7 +47,6 @@ func (node Node) checkAliveRpc() bool {
 }
 
 func (node Node) findSuccessorRpc(id []byte) (bool, *Node) {
-	fmt.Println("Trying to join: " + string(node.Address))
 	client, err := rpc.Dial("tcp", string(node.Address))
 	checkError(err)
 
@@ -67,7 +66,7 @@ func (r *Ring) CheckAlive(inBool bool, reply *bool) error {
 	return nil
 }
 
-func (t *Ring) FindSuccessor(id []byte, reply *RpcReply) error {
+func (r *Ring) FindSuccessor(id []byte, reply *RpcReply) error {
 	found, retNode := myNode.findSuccessor(id)
 	*reply = RpcReply{Found: found, Node: retNode}
 	return nil

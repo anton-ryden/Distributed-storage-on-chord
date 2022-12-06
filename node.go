@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/big"
 	"strconv"
+	"time"
 )
 
 const m = sha1.Size * 9
@@ -46,6 +47,52 @@ func newNode(ip string, port int, iArg string, r int) Node {
 	return Node{Address: addr, R: r, Id: id}
 }
 
+func initRoutines() {
+	// Periodically fixFingers the node.
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		done := make(chan bool)
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+
+				myNode.fixFingers()
+			}
+		}
+	}()
+
+	// Periodically stabilize the node.
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		done := make(chan bool)
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				myNode.stabilize()
+			}
+		}
+	}()
+
+	// Periodically checkPredecessor the node.
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		done := make(chan bool)
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				myNode.checkPredecessor()
+			}
+		}
+	}()
+
+}
+
 func hash(ipPort string) []byte {
 	h := sha1.New()
 	ha := new(big.Int).SetBytes(h.Sum([]byte(ipPort)))
@@ -67,12 +114,17 @@ func (node *Node) create() {
 
 // join a Chord ring containing node n′.
 func (node *Node) join(joinNode Node) {
-	log.Println("Joining: " + joinNode.Address + "\tLooking for id: ")
+	log.Println("Joining: " + joinNode.Address + "\t")
 	node.Predecessor = nil
-	found, successor, maxSteps := false, &Node{}, 5
+	found, successor, maxSteps := false, &joinNode, 5
+	var lastAddress NodeAddress
+	for !found || maxSteps > 0 {
+		if lastAddress == successor.Address {
+			break
+		}
+		lastAddress = successor.Address
+		found, successor = successor.findSuccessorRpc(node.Id)
 
-	for !found && maxSteps > 0 {
-		found, successor = joinNode.findSuccessorRpc(node.Id)
 		maxSteps--
 	}
 
@@ -98,6 +150,9 @@ func (node Node) find(id []byte, start Node) Node {
 func (node Node) stabilize() {
 	suc := node.Successor[0]
 	x := suc.Predecessor
+	if x == nil {
+		return
+	}
 	if bytes.Equal(x.Id, node.Id) || bytes.Equal(node.Id, suc.Id) {
 		node.Successor[0] = x
 	}
@@ -118,6 +173,7 @@ func (node Node) fixFingers() {
 		if i > m {
 			i = 1
 		}
+
 		found, suc := node.findSuccessor(node.jump(i))
 		if found {
 			node.FingerTable[i] = &suc
@@ -127,6 +183,9 @@ func (node Node) fixFingers() {
 
 // called periodically. checks whether predecessor has failed.
 func (node Node) checkPredecessor() {
+	if node.Predecessor == nil {
+		return
+	}
 	if !node.Predecessor.checkAliveRpc() {
 		node.Predecessor = nil
 	}
@@ -147,6 +206,9 @@ func (node Node) findSuccessor(id []byte) (bool, Node) {
 // search the local table for the highest predecessor of id
 func (node Node) closestPrecedingNode(id []byte) Node {
 	for i := m; i > 1; i-- {
+		if node.FingerTable == nil {
+			continue
+		}
 		if bytes.Equal(node.FingerTable[i].Id, id) {
 			iFinger := node.FingerTable[i]
 			return *iFinger
