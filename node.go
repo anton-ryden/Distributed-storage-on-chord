@@ -10,9 +10,12 @@ import (
 )
 
 const m = sha1.Size * 9
+
 type Key string
 type NodeAddress string
+
 var maxSteps = 32
+
 type Node struct {
 	Address     NodeAddress
 	FingerTable []*Node
@@ -74,7 +77,7 @@ func (node *Node) join(joinNode Node) {
 func find(id []byte, start Node) Node {
 	found, nextNode := false, start
 	i := 0
-	for found == false && i < maxSteps{
+	for found == false && i < maxSteps {
 		found, nextNode = nextNode.findSuccessorRpc(id)
 		i++
 	}
@@ -110,10 +113,10 @@ func (node *Node) fixFingers() {
 	print("")
 }
 
-func fingerEntry(node *Node) *Node{
+func fingerEntry(node *Node) *Node {
 	retNode := Node{
-		Address:     node.Address,
-		Id:          node.Id,
+		Address: node.Address,
+		Id:      node.Id,
 	}
 	return &retNode
 }
@@ -142,7 +145,7 @@ func (node *Node) findSuccessor(id []byte) (bool, Node) {
 // search the local table for the highest predecessor of id
 func (node *Node) closestPrecedingNode(id []byte) Node {
 	for i := m - 1; i > 1; i-- {
-		if len(node.FingerTable) <= i{
+		if len(node.FingerTable) <= i {
 			continue
 		} else if node.FingerTable[i] == nil {
 			continue
@@ -218,4 +221,15 @@ func (node *Node) jump(fingerentry int) []byte {
 	result := new(big.Int).Mod(sum, hashMod)
 	res := result.Bytes()
 	return res
+}
+
+func between(start, elt, end []byte, inclusive bool) bool {
+	e := new(big.Int).SetBytes(end)
+	s := new(big.Int).SetBytes(start)
+	el := new(big.Int).SetBytes(elt)
+	if e.Cmp(s) > 0 {
+		return (s.Cmp(el) < 0 && el.Cmp(e) < 0) || (inclusive && el.Cmp(e) == 0)
+	} else {
+		return s.Cmp(el) < 0 || el.Cmp(e) < 0 || (inclusive && el.Cmp(e) == 0)
+	}
 }
