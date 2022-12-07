@@ -18,7 +18,18 @@ type RpcReply struct {
 	Node  Node
 }
 
-func (node Node) notifyRpc(notifyOfMe Node) {
+func (node *Node) getNodeRpc() (){
+	client, err := rpc.Dial("tcp", string(node.Address))
+	checkError(err)
+
+	var reply interface{}
+	err = client.Call("Ring.Notify", false, &reply)
+	if err != nil {
+		log.Println("Ring.Notify ", err)
+	}
+}
+
+func (node *Node) notifyRpc(notifyOfMe *Node) {
 	client, err := rpc.Dial("tcp", string(node.Address))
 	checkError(err)
 
@@ -29,7 +40,7 @@ func (node Node) notifyRpc(notifyOfMe Node) {
 	}
 }
 
-func (node Node) checkAliveRpc() bool {
+func (node *Node) checkAliveRpc() bool {
 	// Timeout connection if exceed 400ms. If timout occur we consider node dead
 	conn, err := net.DialTimeout("tcp", string(node.Address), time.Millisecond*400)
 	if err != nil {
@@ -46,14 +57,18 @@ func (node Node) checkAliveRpc() bool {
 	return reply
 }
 
-func (node Node) findSuccessorRpc(id []byte) (bool, *Node) {
+func (node *Node) findSuccessorRpc(id []byte) (bool, Node) {
 	client, err := rpc.Dial("tcp", string(node.Address))
 	checkError(err)
 
 	var reply RpcReply
 
 	err = client.Call("Ring.FindSuccessor", &id, &reply)
-	return reply.Found, &reply.Node
+	return reply.Found, reply.Node
+}
+
+func (r *Ring) GetNodeRpc(){
+
 }
 
 func (r *Ring) Notify(notifyOf Node, reply *bool) error {
@@ -68,7 +83,8 @@ func (r *Ring) CheckAlive(inBool bool, reply *bool) error {
 
 func (r *Ring) FindSuccessor(id []byte, reply *RpcReply) error {
 	found, retNode := myNode.findSuccessor(id)
-	*reply = RpcReply{Found: found, Node: retNode}
+	reply.Found = found
+	reply.Node = retNode
 	return nil
 }
 

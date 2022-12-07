@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"crypto/sha1"
-	"fmt"
 	"log"
 	"math/big"
 	"strconv"
@@ -11,14 +10,9 @@ import (
 )
 
 const m = sha1.Size * 9
-
-var two = big.NewInt(2)
-var hashMod = new(big.Int).Exp(big.NewInt(2), big.NewInt(m), nil)
-
 type Key string
-
 type NodeAddress string
-
+var maxSteps = 32
 type Node struct {
 	Address     NodeAddress
 	FingerTable []*Node
@@ -47,10 +41,124 @@ func newNode(ip string, port int, iArg string, r int) Node {
 	return Node{Address: addr, R: r, Id: id}
 }
 
+// called periodically. verifies n’s immediate
+// successor, and tells the successor about n.
+func (node *Node) stabilize() {
+	suc := node.Successor[0]
+	x := suc.Predecessor
+	if x == nil {
+		return
+	}
+	if bytes.Equal(x.Id, node.Id) || bytes.Equal(node.Id, suc.Id) {
+		node.Successor[0] = x
+	}
+
+	node.Successor[0].notifyRpc(node)
+}
+
+// create a new Chord ring.
+func (node *Node) create() {
+	node.Predecessor = nil
+	node.Successor = append(node.Successor, &Node{Address: node.Address, R: node.R, Id: node.Id})
+}
+
+// join a Chord ring containing node n′.
+func (node *Node) join(joinNode Node) {
+	log.Println("Joining: " + joinNode.Address + "\t")
+	node.Predecessor = nil
+	successor := find(node.Id, joinNode)
+	// if node did not exist we add joiNode as successor
+	node.Successor = append(node.Successor, &successor)
+}
+
+func find(id []byte, start Node) Node {
+	found, nextNode := false, start
+	i := 0
+	for found == false && i < maxSteps{
+		found, nextNode = nextNode.findSuccessorRpc(id)
+		i++
+	}
+
+	if found == true {
+		return nextNode
+	} else {
+		//return find(node.Successor[i])
+		return Node{}
+	}
+}
+
+// n′ thinks it might be our predecessor.
+func (node *Node) notify(n Node) {
+	if node.Predecessor == nil || (&n == node.Predecessor || n.Address == node.Address) {
+		node.Predecessor = &n
+	}
+}
+
+// called periodically. refreshes finger table entries.
+// next stores the index of the next finger to fix.
+func (node *Node) fixFingers() {
+	node.FingerTable = []*Node{}
+	for i := 0; i < m; i++ {
+		if i > m {
+			i = 0
+		}
+
+		jump := node.jump(i)
+		_, suc := node.findSuccessor(jump)
+		node.FingerTable = append(node.FingerTable, fingerEntry(&suc))
+	}
+	print("")
+}
+
+func fingerEntry(node *Node) *Node{
+	retNode := Node{
+		Address:     node.Address,
+		Id:          node.Id,
+	}
+	return &retNode
+}
+
+// called periodically. checks whether predecessor has failed.
+func (node *Node) checkPredecessor() {
+	if node.Predecessor == nil {
+		return
+	}
+	if !node.Predecessor.checkAliveRpc() {
+		node.Predecessor = nil
+	}
+}
+
+// ask node n to find the successor of id
+// or a better node to continue the search with
+func (node *Node) findSuccessor(id []byte) (bool, Node) {
+	for _, suc := range node.Successor {
+		if bytes.Equal(id, suc.Id) {
+			return true, *suc
+		}
+	}
+	return false, node.closestPrecedingNode(id)
+}
+
+// search the local table for the highest predecessor of id
+func (node *Node) closestPrecedingNode(id []byte) Node {
+	for i := m - 1; i > 1; i-- {
+		if len(node.FingerTable) <= i{
+			continue
+		} else if node.FingerTable[i] == nil {
+			continue
+		}
+		if bytes.Equal(node.FingerTable[i].Id, id) {
+			iFinger := node.FingerTable[i]
+			return *iFinger
+		}
+	}
+	return *node.Successor[0]
+}
+
 func initRoutines() {
 	// Periodically fixFingers the node.
 	go func() {
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(time.Millisecond * time.Duration(*tff))
 		done := make(chan bool)
 		for {
 			select {
@@ -65,7 +173,7 @@ func initRoutines() {
 
 	// Periodically stabilize the node.
 	go func() {
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(time.Millisecond * time.Duration(*ts))
 		done := make(chan bool)
 		for {
 			select {
@@ -79,7 +187,7 @@ func initRoutines() {
 
 	// Periodically checkPredecessor the node.
 	go func() {
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(time.Millisecond * time.Duration(*tcp))
 		done := make(chan bool)
 		for {
 			select {
@@ -96,132 +204,18 @@ func initRoutines() {
 func hash(ipPort string) []byte {
 	h := sha1.New()
 	ha := new(big.Int).SetBytes(h.Sum([]byte(ipPort)))
+	hashMod := new(big.Int).Exp(big.NewInt(2), big.NewInt(m), nil)
+	ha.Mod(ha, hashMod)
 	return []byte(ha.String())
 }
 
-func (node Node) print() {
-	fmt.Println("\n+-+-+-+-+-+- Node DETAILS +-+-+-+-+-+-+")
-	fmt.Println("Adress: " + node.Address)
-	fmt.Printf("ID: %d\n", node.Id)
-	fmt.Println("Number of Successors: ", len(node.Successor))
-}
-
-// create a new Chord ring.
-func (node *Node) create() {
-	node.Predecessor = nil
-	node.Successor = append(node.Successor, &Node{Address: node.Address, R: node.R, Id: node.Id})
-}
-
-// join a Chord ring containing node n′.
-func (node *Node) join(joinNode Node) {
-	log.Println("Joining: " + joinNode.Address + "\t")
-	node.Predecessor = nil
-	found, successor, maxSteps := false, &joinNode, 5
-	var lastAddress NodeAddress
-	for !found || maxSteps > 0 {
-		if lastAddress == successor.Address {
-			break
-		}
-		lastAddress = successor.Address
-		found, successor = successor.findSuccessorRpc(node.Id)
-
-		maxSteps--
-	}
-
-	node.Successor = append(node.Successor, successor)
-}
-
-func (node Node) find(id []byte, start Node) Node {
-	found, nextNode := false, start
-	for found == false {
-		found, nextNode = nextNode.findSuccessor(id)
-	}
-
-	if found == true {
-		return nextNode
-	} else {
-		//return find(node.Successor[i])
-		return Node{}
-	}
-}
-
-// called periodically. verifies n’s immediate
-// successor, and tells the successor about n.
-func (node Node) stabilize() {
-	suc := node.Successor[0]
-	x := suc.Predecessor
-	if x == nil {
-		return
-	}
-	if bytes.Equal(x.Id, node.Id) || bytes.Equal(node.Id, suc.Id) {
-		node.Successor[0] = x
-	}
-	node.Successor[0].notifyRpc(node)
-}
-
-// n′ thinks it might be our predecessor.
-func (node Node) notify(n Node) {
-	if node.Predecessor == nil || (&n == node.Predecessor || n.Address == node.Address) {
-		node.Predecessor = &n
-	}
-}
-
-// called periodically. refreshes finger table entries.
-// next stores the index of the next finger to fix.
-func (node Node) fixFingers() {
-	for i := 1; i < m; i++ {
-		if i > m {
-			i = 1
-		}
-
-		found, suc := node.findSuccessor(node.jump(i))
-		if found {
-			node.FingerTable[i] = &suc
-		}
-	}
-}
-
-// called periodically. checks whether predecessor has failed.
-func (node Node) checkPredecessor() {
-	if node.Predecessor == nil {
-		return
-	}
-	if !node.Predecessor.checkAliveRpc() {
-		node.Predecessor = nil
-	}
-}
-
-// ask node n to find the successor of id
-// or a better node to continue the search with
-func (node Node) findSuccessor(id []byte) (bool, Node) {
-	for _, suc := range node.Successor {
-		if bytes.Equal(id, suc.Id) {
-			return true, *suc
-		}
-	}
-
-	return false, node.closestPrecedingNode(id)
-}
-
-// search the local table for the highest predecessor of id
-func (node Node) closestPrecedingNode(id []byte) Node {
-	for i := m; i > 1; i-- {
-		if node.FingerTable == nil {
-			continue
-		}
-		if bytes.Equal(node.FingerTable[i].Id, id) {
-			iFinger := node.FingerTable[i]
-			return *iFinger
-		}
-	}
-	return *node.Successor[0]
-}
-
-func (node Node) jump(fingerentry int) []byte {
-	fingerentryminus1 := big.NewInt(int64(fingerentry) - 1)
-	jump := new(big.Int).Exp(two, fingerentryminus1, nil)
+func (node *Node) jump(fingerentry int) []byte {
+	two := big.NewInt(2)
+	hashMod := new(big.Int).Exp(big.NewInt(2), big.NewInt(m), nil)
+	jump := new(big.Int).Exp(two, big.NewInt(int64(fingerentry)), nil)
 	n := new(big.Int).SetBytes(node.Id)
 	sum := new(big.Int).Add(n, jump)
 	result := new(big.Int).Mod(sum, hashMod)
-	return []byte(result.String())
+	res := result.Bytes()
+	return res
 }
