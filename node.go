@@ -47,13 +47,13 @@ func newNode(ip string, port int, iArg string, r int) Node {
 // called periodically. verifies n’s immediate
 // successor, and tells the successor about n.
 func (node *Node) stabilize() {
+
 	suc := node.Successor[0]
 	x := suc.Predecessor
-	if x == nil {
-		return
-	}
-	if bytes.Equal(x.Id, node.Id) || bytes.Equal(node.Id, suc.Id) {
-		node.Successor[0] = x
+	if x != nil {
+		if bytes.Equal(x.Id, node.Id) || bytes.Equal(node.Id, suc.Id) {
+			node.Successor[0] = x
+		}
 	}
 
 	node.Successor[0].notifyRpc(node)
@@ -134,10 +134,12 @@ func (node *Node) checkPredecessor() {
 // ask node n to find the successor of id
 // or a better node to continue the search with
 func (node *Node) findSuccessor(id []byte) (bool, Node) {
+	prev := node.Id
 	for _, suc := range node.Successor {
-		if bytes.Equal(id, suc.Id) {
+		if between(prev, id, suc.Id, true) {
 			return true, *suc
 		}
+		prev = suc.Id
 	}
 	return false, node.closestPrecedingNode(id)
 }

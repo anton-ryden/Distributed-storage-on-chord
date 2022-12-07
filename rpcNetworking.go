@@ -18,14 +18,14 @@ type RpcReply struct {
 	Node  Node
 }
 
-func (node *Node) getNodeRpc() (){
+func (node *Node) updateRpc(){
 	client, err := rpc.Dial("tcp", string(node.Address))
 	checkError(err)
 
-	var reply interface{}
-	err = client.Call("Ring.Notify", false, &reply)
+	var reply bool
+	err = client.Call("Ring.Update", false, &reply)
 	if err != nil {
-		log.Println("Ring.Notify ", err)
+		log.Println("Ring.Update", err)
 	}
 }
 
@@ -67,8 +67,9 @@ func (node *Node) findSuccessorRpc(id []byte) (bool, Node) {
 	return reply.Found, reply.Node
 }
 
-func (r *Ring) GetNodeRpc(){
-
+func (r *Ring) Update(inBool bool, reply *bool) error {
+	*reply = true
+	return nil
 }
 
 func (r *Ring) Notify(notifyOf Node, reply *bool) error {

@@ -22,6 +22,7 @@ func main() {
 		myNode.create()
 	} else {
 		joinNode := newNode(*ja, *jp, "", *r)
+		joinNode.updateRpc()
 		myNode.join(joinNode)
 	}
 
