@@ -99,6 +99,7 @@ func find(id []byte, start Node) Node {
 func (node *Node) notify(n Node) {
 	if node.Predecessor == nil || (&n == node.Predecessor || n.Address == node.Address) {
 		node.Predecessor = &n
+		n.updateImmSuccessorRpc(node)
 	}
 }
 

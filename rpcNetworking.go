@@ -40,6 +40,24 @@ func (node *Node) updateRpc(suc *Node) {
 
 }
 
+func (node *Node) updateImmSuccessorRpc(suc *Node) {
+	client, err := rpc.Dial("tcp", string(suc.Address))
+	defer client.Close()
+	checkError(err)
+
+	var reply bool
+
+	err = client.Call("Ring.UpdateImmSuccessor", &node, &reply)
+	if err != nil {
+		log.Println("Ring.GetNode", err)
+	}
+}
+
+func (r *Ring) UpdateImmSuccessor(immSuc *Node, reply *bool) error {
+	myNode.Successor[0] = immSuc
+	return nil
+}
+
 func (node *Node) notifyRpc(notifyOfMe *Node) {
 	client, err := rpc.Dial("tcp", string(node.Address))
 	checkError(err)
