@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net"
@@ -28,10 +29,13 @@ func (node *Node) updateRpc(suc *Node) {
 	if err != nil {
 		log.Println("Ring.Update", err)
 	}
-	node.Successor = append([]*Node{suc}, reply.Successor...)
-	sucLen := len(node.Successor)
-	if sucLen > *r {
-		node.Successor = node.Successor[:sucLen-1]
+	sucSuc := reply.Successor
+	if !bytes.Equal(sucSuc[0].Id, suc.Id) {
+		node.Successor = append([]*Node{suc}, sucSuc...)
+		sucLen := len(node.Successor)
+		if sucLen > *r {
+			node.Successor = node.Successor[:sucLen-1]
+		}
 	}
 }
 
