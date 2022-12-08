@@ -102,4 +102,11 @@ func PrintState() {
 	} else {
 		fmt.Println("\nFingertable Empty")
 	}
+	if myNode.Predecessor != nil {
+		fmt.Println("\n+-+-+-+-+-+-+ Predecessor info +-+-+-+-+-+--+")
+		fmt.Println("ID: ", string(myNode.Predecessor.Id), "\nIP/port: ", myNode.Predecessor.Address)
+		fmt.Println("-------------------------------")
+	} else {
+		fmt.Println("\nNo Predecessor found")
+	}
 }

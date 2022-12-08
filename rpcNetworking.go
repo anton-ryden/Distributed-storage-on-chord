@@ -37,6 +37,7 @@ func (node *Node) updateRpc(suc *Node) {
 			node.Successor = node.Successor[:sucLen-1]
 		}
 	}
+
 }
 
 func (node *Node) notifyRpc(notifyOfMe *Node) {
@@ -78,6 +79,11 @@ func (node *Node) findSuccessorRpc(id []byte) (bool, Node) {
 	var reply RpcReply
 
 	err = client.Call("Ring.FindSuccessor", &id, &reply)
+
+	if err != nil {
+		fmt.Println("Ring.FindSuccessor", err)
+		return false, Node{}
+	}
 	return reply.Found, reply.Node
 }
 

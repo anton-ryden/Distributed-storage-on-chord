@@ -58,7 +58,7 @@ func (node *Node) stabilize() {
 		}
 	}
 	if bytes.Equal(node.Successor[0].Id, node.Id) {
-		node.notify(*node.Successor[0])
+		return
 	} else {
 		node.Successor[0].notifyRpc(node)
 	}
@@ -144,12 +144,29 @@ func (node *Node) checkPredecessor() {
 func (node *Node) findSuccessor(id []byte) (bool, Node) {
 	prev := node.Id
 	for _, suc := range node.Successor {
-		if between(prev, id, suc.Id, true) {
+		if between(prev, id, suc.Id, false) {
 			return true, *suc
+		} else if between(suc.Id, id, prev, false) {
+			return true, *node
 		}
 		prev = suc.Id
 	}
 	return false, node.closestPrecedingNode(id)
+}
+
+func between(start, elt, end []byte, inclusive bool) bool {
+	e := new(big.Int).SetBytes(end)
+	s := new(big.Int).SetBytes(start)
+	el := new(big.Int).SetBytes(elt)
+	temp1 := s.Cmp(el)
+	temp1 = temp1
+	temp2 := el.Cmp(e)
+	temp2 = temp2
+	if e.Cmp(s) > 0 {
+		return (s.Cmp(el) < 0 && el.Cmp(e) < 0) || (inclusive && el.Cmp(e) == 0)
+	} else {
+		return s.Cmp(el) < 0 || el.Cmp(e) < 0 || (inclusive && el.Cmp(e) == 0)
+	}
 }
 
 // search the local table for the highest predecessor of id
@@ -229,15 +246,4 @@ func (node *Node) jump(fingerentry int) []byte {
 	result := new(big.Int).Mod(sum, hashMod)
 	res := result.Bytes()
 	return res
-}
-
-func between(start, elt, end []byte, inclusive bool) bool {
-	e := new(big.Int).SetBytes(end)
-	s := new(big.Int).SetBytes(start)
-	el := new(big.Int).SetBytes(elt)
-	if e.Cmp(s) > 0 {
-		return (s.Cmp(el) < 0 && el.Cmp(e) < 0) || (inclusive && el.Cmp(e) == 0)
-	} else {
-		return s.Cmp(el) < 0 || el.Cmp(e) < 0 || (inclusive && el.Cmp(e) == 0)
-	}
 }
