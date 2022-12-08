@@ -47,19 +47,20 @@ func newNode(ip string, port int, iArg string, r int) Node {
 // called periodically. verifies n’s immediate
 // successor, and tells the successor about n.
 func (node *Node) stabilize() {
-	suc := node.Successor[0]
-	if !bytes.Equal(suc.Id, node.Id) {
-		node.updateRpc(suc)
-	}
-	x := suc.Predecessor
-	if x != nil {
-		if bytes.Equal(x.Id, node.Id) || bytes.Equal(node.Id, suc.Id) {
-			node.Successor[0] = x
+
+	suc := node.getPredecessorRPC(node.Successor[0])
+
+	/*
+		if !bytes.Equal(suc.Id, node.Id) {
+			node.updateRpc(&suc)
 		}
+	*/
+	x := suc.Predecessor
+	if x != nil && between(x.Id, node.Id, suc.Id) {
+		node.Successor[0] = x
 	}
-	if bytes.Equal(node.Successor[0].Id, node.Id) {
-		return
-	} else {
+
+	if !bytes.Equal(node.Successor[0].Id, node.Id) {
 		node.Successor[0].notifyRpc(node)
 	}
 }
@@ -97,9 +98,9 @@ func find(id []byte, start Node) Node {
 
 // n′ thinks it might be our predecessor.
 func (node *Node) notify(n Node) {
-	if node.Predecessor == nil || (&n == node.Predecessor || n.Address == node.Address) {
+	if node.Predecessor == nil || between(n.Id, node.Predecessor.Id, node.Id) {
 		node.Predecessor = &n
-		n.updateImmSuccessorRpc(node)
+		//n.updateImmSuccessorRpc(node)
 	}
 }
 
@@ -145,9 +146,9 @@ func (node *Node) checkPredecessor() {
 func (node *Node) findSuccessor(id []byte) (bool, Node) {
 	prev := node.Id
 	for _, suc := range node.Successor {
-		if between(prev, id, suc.Id, false) {
+		if between(id, prev, suc.Id) {
 			return true, *suc
-		} else if between(suc.Id, id, prev, false) {
+		} else if between(id, suc.Id, prev) {
 			return true, *node
 		}
 		prev = suc.Id
@@ -155,19 +156,16 @@ func (node *Node) findSuccessor(id []byte) (bool, Node) {
 	return false, node.closestPrecedingNode(id)
 }
 
-func between(start, elt, end []byte, inclusive bool) bool {
-	e := new(big.Int).SetBytes(end)
-	s := new(big.Int).SetBytes(start)
-	el := new(big.Int).SetBytes(elt)
-	temp1 := s.Cmp(el)
-	temp1 = temp1
-	temp2 := el.Cmp(e)
-	temp2 = temp2
-	if e.Cmp(s) > 0 {
-		return (s.Cmp(el) < 0 && el.Cmp(e) < 0) || (inclusive && el.Cmp(e) == 0)
-	} else {
-		return s.Cmp(el) < 0 || el.Cmp(e) < 0 || (inclusive && el.Cmp(e) == 0)
+func between(elt, start, end []byte) bool {
+	switch bytes.Compare(start, end) {
+	case 1:
+		return bytes.Compare(start, elt) == -1 || bytes.Compare(end, elt) >= 0
+	case -1:
+		return bytes.Compare(start, elt) == -1 && bytes.Compare(end, elt) >= 0
+	case 0:
+		return bytes.Compare(start, elt) != 0
 	}
+	return false
 }
 
 // search the local table for the highest predecessor of id

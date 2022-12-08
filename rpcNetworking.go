@@ -40,14 +40,27 @@ func (node *Node) updateRpc(suc *Node) {
 
 }
 
+func (node *Node) getPredecessorRPC (predof *Node) Node{
+	client, err := rpc.Dial("tcp", string(predof.Address))
+	defer client.Close()
+	checkError(err)
+
+	var reply *Node
+	err = client.Call("Ring.Update", false, &reply)
+	if err != nil {
+		log.Println("Ring.Update", err)
+	}
+	return *reply
+}
+
 func (node *Node) updateImmSuccessorRpc(suc *Node) {
-	client, err := rpc.Dial("tcp", string(suc.Address))
+	client, err := rpc.Dial("tcp", string(node.Address))
 	defer client.Close()
 	checkError(err)
 
 	var reply bool
 
-	err = client.Call("Ring.UpdateImmSuccessor", &node, &reply)
+	err = client.Call("Ring.UpdateImmSuccessor", &suc, &reply)
 	if err != nil {
 		log.Println("Ring.GetNode", err)
 	}
@@ -112,6 +125,11 @@ func (r *Ring) Update(inBool bool, reply *Node) error {
 
 func (r *Ring) Notify(notifyOf Node, reply *bool) error {
 	myNode.notify(notifyOf)
+	return nil
+}
+
+func (r *Ring) GetPredecessor(inBool bool, reply *Node) error {
+	reply = myNode.Predecessor
 	return nil
 }
 
