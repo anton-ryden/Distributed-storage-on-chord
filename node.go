@@ -55,8 +55,11 @@ func (node *Node) stabilize() {
 			node.Successor[0] = x
 		}
 	}
-
-	node.Successor[0].notifyRpc(node)
+	if bytes.Equal(node.Successor[0].Id, node.Id) {
+		node.notify(*node.Successor[0])
+	} else {
+		node.Successor[0].notifyRpc(node)
+	}
 }
 
 // create a new Chord ring.
@@ -126,6 +129,9 @@ func (node *Node) checkPredecessor() {
 	if node.Predecessor == nil {
 		return
 	}
+	if bytes.Equal(node.Predecessor.Id, node.Id) {
+		return
+	}
 	if !node.Predecessor.checkAliveRpc() {
 		node.Predecessor = nil
 	}
@@ -170,7 +176,6 @@ func initRoutines() {
 			case <-done:
 				return
 			case <-ticker.C:
-
 				myNode.fixFingers()
 			}
 		}
@@ -189,7 +194,6 @@ func initRoutines() {
 			}
 		}
 	}()
-
 	// Periodically checkPredecessor the node.
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * time.Duration(*tcp))
