@@ -22,7 +22,6 @@ func main() {
 		myNode.create()
 	} else {
 		joinNode := newNode(*ja, *jp, "", *r)
-		joinNode.updateRpc()
 		myNode.join(joinNode)
 	}
 
@@ -31,6 +30,15 @@ func main() {
 
 	initRoutines()
 
+	go scan()
+
+	//Main for loop
+	for {
+		listen() // Go routine for listening to traffic
+	}
+}
+
+func scan() {
 	// Init for reading stdin
 	scanner := bufio.NewScanner((os.Stdin))
 
@@ -40,10 +48,7 @@ func main() {
 		"PrintState": PrintState,
 	}
 
-	//Main for loop
 	for {
-		go listen() // Go routine for listening to traffic
-
 		scanner.Scan()
 		txt := scanner.Text()
 		for key, element := range functions {
@@ -51,7 +56,6 @@ func main() {
 				element.(func())()
 			}
 		}
-
 	}
 }
 

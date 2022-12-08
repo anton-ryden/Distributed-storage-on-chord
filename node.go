@@ -47,8 +47,10 @@ func newNode(ip string, port int, iArg string, r int) Node {
 // called periodically. verifies n’s immediate
 // successor, and tells the successor about n.
 func (node *Node) stabilize() {
-
 	suc := node.Successor[0]
+	if !bytes.Equal(suc.Id, node.Id) {
+		node.updateRpc(suc)
+	}
 	x := suc.Predecessor
 	if x != nil {
 		if bytes.Equal(x.Id, node.Id) || bytes.Equal(node.Id, suc.Id) {

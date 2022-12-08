@@ -18,14 +18,20 @@ type RpcReply struct {
 	Node  Node
 }
 
-func (node *Node) updateRpc() {
-	client, err := rpc.Dial("tcp", string(node.Address))
+func (node *Node) updateRpc(suc *Node) {
+	client, err := rpc.Dial("tcp", string(suc.Address))
+	defer client.Close()
 	checkError(err)
 
 	var reply *Node
 	err = client.Call("Ring.Update", false, &reply)
 	if err != nil {
 		log.Println("Ring.Update", err)
+	}
+	node.Successor = append([]*Node{suc}, reply.Successor...)
+	sucLen := len(node.Successor)
+	if sucLen > *r {
+		node.Successor = node.Successor[:sucLen-1]
 	}
 }
 
@@ -34,6 +40,7 @@ func (node *Node) notifyRpc(notifyOfMe *Node) {
 	checkError(err)
 
 	var reply bool
+	defer client.Close()
 	err = client.Call("Ring.Notify", &notifyOfMe, &reply)
 	if err != nil {
 		log.Println("Ring.Notify ", err)
@@ -47,6 +54,7 @@ func (node *Node) checkAliveRpc() bool {
 		log.Fatal("dialing:", err)
 	}
 	client := rpc.NewClient(conn)
+	defer client.Close()
 	var reply bool
 	err = client.Call("Ring.CheckAlive", false, &reply)
 	if err != nil {
@@ -60,6 +68,7 @@ func (node *Node) checkAliveRpc() bool {
 
 func (node *Node) findSuccessorRpc(id []byte) (bool, Node) {
 	client, err := rpc.Dial("tcp", string(node.Address))
+	defer client.Close()
 	checkError(err)
 
 	var reply RpcReply
