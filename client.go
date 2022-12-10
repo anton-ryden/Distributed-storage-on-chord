@@ -22,7 +22,7 @@ func main() {
 	if *ja == "" {
 		myNode.create()
 	} else {
-		joinAddress := NodeAddress(*ja + ":" + strconv.Itoa(*jp))
+		joinAddress := *ja + ":" + strconv.Itoa(*jp)
 		joinNode := BasicNode{Address: joinAddress}
 		myNode.join(joinNode)
 	}
@@ -58,13 +58,6 @@ func scan() {
 				element.(func())()
 			}
 		}
-	}
-}
-
-func checkError(err error) {
-	if err != nil {
-		fmt.Println("Fatal error ", err.Error())
-		os.Exit(1)
 	}
 }
 

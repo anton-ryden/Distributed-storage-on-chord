@@ -12,12 +12,11 @@ import (
 const m = sha1.Size * 9
 
 type Key string
-type NodeAddress string
 
 var maxSteps = 32
 
 type Node struct {
-	Address     NodeAddress
+	Address     string
 	FingerTable []*BasicNode
 	Predecessor *BasicNode
 	Successor   []*BasicNode
@@ -28,13 +27,13 @@ type Node struct {
 
 // BasicNode Struct: For nodes inside Node struct. Require less information and no recursion.
 type BasicNode struct{
-	Address NodeAddress
+	Address string
 	Id	[]byte
 }
 
 func newNode(ip string, port int, iArg string, r int) Node {
 	// Error handling in arguments file, so we only need to check if ja is set
-	addr := NodeAddress(ip + ":" + strconv.Itoa(port))
+	addr := ip + ":" + strconv.Itoa(port)
 
 	// If i argument is used we set the id to that
 	var id []byte
@@ -51,15 +50,14 @@ func newNode(ip string, port int, iArg string, r int) Node {
 // called periodically. verifies n’s immediate
 // successor, and tells the successor about n.
 func (node *Node) stabilize() {
-	node.getSuccessorsOfRpc(node.Successor[0])
-	x := node.getPredecessorRPC(node.Successor[0])
+	node.rpcCopySuccessorOf(node.Successor[0])
+	x := node.rpcGetPredecessorOf(node.Successor[0])
 
-	if between(x.Id, node.Id, node.Successor[0].Id) {
+	if x.Id != nil && between(x.Id, node.Id, node.Successor[0].Id) {
 		node.Successor[0] =  &x
 	}
 
-	node.Successor[0].notifyRpc(node)
-
+	node.Successor[0].rpcNotifyOf(node)
 }
 
 // create a new Chord ring.
@@ -76,15 +74,15 @@ func (node *Node) join(joinNode BasicNode) {
 	// if node did not exist we add joiNode as successor
 	node.Successor = append(node.Successor, &successor)
 
-	predOfSuc := node.getPredecessorRPC(node.Successor[0])
-	predOfSuc.updateImmSuccessorRpc(node)
+	predOfSuc := node.rpcGetPredecessorOf(node.Successor[0])
+	node.rpcUpdateSuccessorOf(&predOfSuc)
 }
 
 func find(id []byte, start BasicNode) BasicNode {
 	found, nextNode := false, start
 	i := 0
 	for found == false && i < maxSteps {
-		found, nextNode = nextNode.findSuccessorRpc(id)
+		found, nextNode = nextNode.rpcFindSuccessor(id)
 		i++
 	}
 
@@ -127,7 +125,7 @@ func (node *Node) checkPredecessor() {
 	if bytes.Equal(node.Predecessor.Id, node.Id) {
 		return
 	}
-	if !node.Predecessor.checkAliveRpc() {
+	if !node.Predecessor.rpcIsAlive() {
 		node.Predecessor = nil
 	}
 }
