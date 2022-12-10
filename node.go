@@ -47,17 +47,11 @@ func newNode(ip string, port int, iArg string, r int) Node {
 // called periodically. verifies n’s immediate
 // successor, and tells the successor about n.
 func (node *Node) stabilize() {
+	node.updateRpc(node.Successor[0])
+	x := node.getPredecessorRPC(node.Successor[0])
 
-	suc := node.getPredecessorRPC(node.Successor[0])
-
-	/*
-		if !bytes.Equal(suc.Id, node.Id) {
-			node.updateRpc(&suc)
-		}
-	*/
-	x := suc.Predecessor
-	if x != nil && between(x.Id, node.Id, suc.Id) {
-		node.Successor[0] = x
+	if bytes.Equal(x.Id, node.Id) || bytes.Equal(x.Id, node.Successor[0].Id) {
+		node.Successor[0] =  &x
 	}
 
 	if !bytes.Equal(node.Successor[0].Id, node.Id) {
@@ -78,6 +72,7 @@ func (node *Node) join(joinNode Node) {
 	successor := find(node.Id, joinNode)
 	// if node did not exist we add joiNode as successor
 	node.Successor = append(node.Successor, &successor)
+	node.Successor[0].updateImmSuccessorRpc(node)
 }
 
 func find(id []byte, start Node) Node {
