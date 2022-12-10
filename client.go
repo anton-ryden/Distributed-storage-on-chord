@@ -21,15 +21,6 @@ func main() {
 
 	if *ja == "" {
 		myNode.create()
-		one := []byte("1")
-		two := []byte("2")
-		three := []byte("3")
-
-
-		res := between(two, one, three)
-		res = between(two, three, one)
-		res = between(one, three, two)
-		res = res
 	} else {
 		joinAddress := NodeAddress(*ja + ":" + strconv.Itoa(*jp))
 		joinNode := BasicNode{Address: joinAddress}

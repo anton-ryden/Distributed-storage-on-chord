@@ -51,33 +51,31 @@ func newNode(ip string, port int, iArg string, r int) Node {
 // called periodically. verifies n’s immediate
 // successor, and tells the successor about n.
 func (node *Node) stabilize() {
-	node.updateRpc(node.Successor[0])
-	/*
+	node.getSuccessorsOfRpc(node.Successor[0])
 	x := node.getPredecessorRPC(node.Successor[0])
 
-	if bytes.Equal(x.Id, node.Id) || bytes.Equal(x.Id, node.Successor[0].Id) {
+	if between(x.Id, node.Id, node.Successor[0].Id) {
 		node.Successor[0] =  &x
 	}
 
-
-	 */
 	node.Successor[0].notifyRpc(node)
 
 }
 
 // create a new Chord ring.
 func (node *Node) create() {
-	node.Predecessor = nil
+	// set predecessor to itself to ensure predecessor never is nil
+	node.Predecessor = &BasicNode{Address: node.Address, Id: node.Id}
 	node.Successor = append(node.Successor, &BasicNode{Address: node.Address, Id: node.Id})
 }
 
 // join a Chord ring containing node n′.
 func (node *Node) join(joinNode BasicNode) {
 	log.Println("Joining: " + joinNode.Address + "\t")
-	node.Predecessor = nil
 	successor := find(node.Id, joinNode)
 	// if node did not exist we add joiNode as successor
 	node.Successor = append(node.Successor, &successor)
+
 	predOfSuc := node.getPredecessorRPC(node.Successor[0])
 	predOfSuc.updateImmSuccessorRpc(node)
 }
@@ -148,7 +146,6 @@ func (node *Node) findSuccessor(id []byte) (bool, BasicNode) {
 }
 
 func between(elt, start, end []byte) bool {
-
 	switch bytes.Compare(start, end) {
 	case 1:
 		return bytes.Compare(start, elt) == -1 || bytes.Compare(end, elt) >= 0

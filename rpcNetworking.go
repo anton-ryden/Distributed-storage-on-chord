@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"net"
@@ -19,24 +18,33 @@ type RpcReply struct {
 	Node  BasicNode
 }
 
-func (node *Node) updateRpc(suc *BasicNode) {
-	client, err := rpc.Dial("tcp", string(suc.Address))
+func (node *Node) getSuccessorsOfRpc(getSucOf *BasicNode) {
+	client, err := rpc.Dial("tcp", string(getSucOf.Address))
 	defer client.Close()
 	checkError(err)
 
 	var reply *Node
-	err = client.Call("Ring.Update", false, &reply)
+	err = client.Call("Ring.GetSuccessorsOf", false, &reply)
 	if err != nil {
-		log.Println("Ring.Update", err)
+		log.Println("Ring.GetSuccessorsOf", err)
 	}
 	replySuccessor := reply.Successor
-	if !bytes.Equal(replySuccessor[0].Id, suc.Id) {
-		node.Successor = append([]*BasicNode{suc}, replySuccessor...)
-		sucLen := len(node.Successor)
-		if sucLen > *r {
-			node.Successor = node.Successor[:sucLen-1]
-		}
+
+	/*
+	fmt.Println("Successors for: ", string(getSucOf.Id))
+	for i, suc := range replySuccessor{
+		fmt.Println(i, " id: ", string(suc.Id))
 	}
+	fmt.Println()
+
+	 */
+
+	node.Successor = append([]*BasicNode{getSucOf}, replySuccessor...)
+	sucLen := len(node.Successor)
+	if sucLen > *r {
+		node.Successor = node.Successor[:sucLen-1]
+	}
+
 
 }
 
@@ -128,8 +136,8 @@ func (node *BasicNode) findSuccessorRpc(id []byte) (bool, BasicNode) {
 	return reply.Found, reply.Node
 }
 
-func (ring *Ring) Update(inBool bool, reply *Node) error {
-	*reply = myNode
+func (ring *Ring) GetSuccessorsOf(inBool bool, reply *Node) error {
+	*reply = Node{Successor: myNode.Successor}
 	return nil
 }
 
@@ -139,7 +147,12 @@ func (ring *Ring) Notify(notifyOf BasicNode, reply *bool) error {
 }
 
 func (ring *Ring) GetPredecessor(inBool bool, reply *BasicNode) error {
-	*reply = *myNode.Predecessor
+	if myNode.Predecessor == nil{
+		*reply = BasicNode{}
+	}else{
+		*reply = *myNode.Predecessor
+	}
+
 	return nil
 }
 
