@@ -16,10 +16,10 @@ type Ring int
 
 type RpcReply struct {
 	Found bool
-	Node  Node
+	Node  BasicNode
 }
 
-func (node *Node) updateRpc(suc *Node) {
+func (node *Node) updateRpc(suc *BasicNode) {
 	client, err := rpc.Dial("tcp", string(suc.Address))
 	defer client.Close()
 	checkError(err)
@@ -31,7 +31,7 @@ func (node *Node) updateRpc(suc *Node) {
 	}
 	sucSuc := reply.Successor
 	if !bytes.Equal(sucSuc[0].Id, suc.Id) {
-		node.Successor = append([]*Node{suc}, sucSuc...)
+		node.Successor = append([]*BasicNode{suc}, sucSuc...)
 		sucLen := len(node.Successor)
 		if sucLen > *r {
 			node.Successor = node.Successor[:sucLen-1]
@@ -40,12 +40,12 @@ func (node *Node) updateRpc(suc *Node) {
 
 }
 
-func (node *Node) getPredecessorRPC (predof *Node) Node{
+func (node *Node) getPredecessorRPC (predof *BasicNode) BasicNode{
 	client, err := rpc.Dial("tcp", string(predof.Address))
 	defer client.Close()
 	checkError(err)
 
-	var reply *Node
+	var reply *BasicNode
 	err = client.Call("Ring.Update", false, &reply)
 	if err != nil {
 		log.Println("Ring.Update", err)
@@ -53,37 +53,39 @@ func (node *Node) getPredecessorRPC (predof *Node) Node{
 	return *reply
 }
 
-func (node *Node) updateImmSuccessorRpc(suc *Node) {
+func (node *BasicNode) updateImmSuccessorRpc(suc *Node) {
 	client, err := rpc.Dial("tcp", string(node.Address))
 	defer client.Close()
 	checkError(err)
 
 	var reply bool
+	send := BasicNode{Address: suc.Address, Id: suc.Id}
 
-	err = client.Call("Ring.UpdateImmSuccessor", &suc, &reply)
+	err = client.Call("Ring.UpdateImmSuccessor", &send, &reply)
 	if err != nil {
 		log.Println("Ring.GetNode", err)
 	}
 }
 
-func (r *Ring) UpdateImmSuccessor(immSuc *Node, reply *bool) error {
+func (r *Ring) UpdateImmSuccessor(immSuc *BasicNode, reply *bool) error {
 	myNode.Successor[0] = immSuc
 	return nil
 }
 
-func (node *Node) notifyRpc(notifyOfMe *Node) {
+func (node *BasicNode) notifyRpc(notifyOfMe *Node) {
 	client, err := rpc.Dial("tcp", string(node.Address))
 	checkError(err)
 
 	var reply bool
 	defer client.Close()
-	err = client.Call("Ring.Notify", &notifyOfMe, &reply)
+	send := BasicNode{Address: notifyOfMe.Address, Id: notifyOfMe.Id}
+	err = client.Call("Ring.Notify", &send, &reply)
 	if err != nil {
 		log.Println("Ring.Notify ", err)
 	}
 }
 
-func (node *Node) checkAliveRpc() bool {
+func (node *BasicNode) checkAliveRpc() bool {
 	// Timeout connection if exceed 400ms. If timout occur we consider node dead
 	conn, err := net.DialTimeout("tcp", string(node.Address), time.Millisecond*400)
 	if err != nil {
@@ -102,7 +104,7 @@ func (node *Node) checkAliveRpc() bool {
 	return reply
 }
 
-func (node *Node) findSuccessorRpc(id []byte) (bool, Node) {
+func (node *BasicNode) findSuccessorRpc(id []byte) (bool, BasicNode) {
 	client, err := rpc.Dial("tcp", string(node.Address))
 	defer client.Close()
 	checkError(err)
@@ -113,7 +115,7 @@ func (node *Node) findSuccessorRpc(id []byte) (bool, Node) {
 
 	if err != nil {
 		fmt.Println("Ring.FindSuccessor", err)
-		return false, Node{}
+		return false, BasicNode{}
 	}
 	return reply.Found, reply.Node
 }
@@ -123,12 +125,12 @@ func (r *Ring) Update(inBool bool, reply *Node) error {
 	return nil
 }
 
-func (r *Ring) Notify(notifyOf Node, reply *bool) error {
+func (r *Ring) Notify(notifyOf BasicNode, reply *bool) error {
 	myNode.notify(notifyOf)
 	return nil
 }
 
-func (r *Ring) GetPredecessor(inBool bool, reply *Node) error {
+func (r *Ring) GetPredecessor(inBool bool, reply *BasicNode) error {
 	reply = myNode.Predecessor
 	return nil
 }

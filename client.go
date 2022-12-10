@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 )
 
 // Set with information from arguments
@@ -21,7 +22,8 @@ func main() {
 	if *ja == "" {
 		myNode.create()
 	} else {
-		joinNode := newNode(*ja, *jp, "", *r)
+		joinAddress := NodeAddress(*ja + ":" + strconv.Itoa(*jp))
+		joinNode := BasicNode{Address: joinAddress}
 		myNode.join(joinNode)
 	}
 

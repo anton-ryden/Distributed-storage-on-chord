@@ -5,3 +5,11 @@ r more successors
 test:
 Arg outside of range
 Arg not present
+
+to do
+clean up struct
+clean up rpc
+check for go routines running
+error handling rpc
+Keys and files
+comments

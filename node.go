@@ -18,14 +18,18 @@ var maxSteps = 32
 
 type Node struct {
 	Address     NodeAddress
-	FingerTable []*Node
-	Predecessor *Node
-	Successor   []*Node
-	Next        int
-	R           int
+	FingerTable []*BasicNode
+	Predecessor *BasicNode
+	Successor   []*BasicNode
 	Id          []byte
 
 	Bucket map[Key]string
+}
+
+// BasicNode Struct: For nodes inside Node struct. Require less information and no recursion.
+type BasicNode struct{
+	Address NodeAddress
+	Id	[]byte
 }
 
 func newNode(ip string, port int, iArg string, r int) Node {
@@ -41,7 +45,7 @@ func newNode(ip string, port int, iArg string, r int) Node {
 		id = []byte(iArg)
 	}
 
-	return Node{Address: addr, R: r, Id: id}
+	return Node{Address: addr, Id: id}
 }
 
 // called periodically. verifies n’s immediate
@@ -62,11 +66,11 @@ func (node *Node) stabilize() {
 // create a new Chord ring.
 func (node *Node) create() {
 	node.Predecessor = nil
-	node.Successor = append(node.Successor, &Node{Address: node.Address, R: node.R, Id: node.Id})
+	node.Successor = append(node.Successor, &BasicNode{Address: node.Address, Id: node.Id})
 }
 
 // join a Chord ring containing node n′.
-func (node *Node) join(joinNode Node) {
+func (node *Node) join(joinNode BasicNode) {
 	log.Println("Joining: " + joinNode.Address + "\t")
 	node.Predecessor = nil
 	successor := find(node.Id, joinNode)
@@ -75,7 +79,7 @@ func (node *Node) join(joinNode Node) {
 	node.Successor[0].updateImmSuccessorRpc(node)
 }
 
-func find(id []byte, start Node) Node {
+func find(id []byte, start BasicNode) BasicNode {
 	found, nextNode := false, start
 	i := 0
 	for found == false && i < maxSteps {
@@ -87,22 +91,21 @@ func find(id []byte, start Node) Node {
 		return nextNode
 	} else {
 		//return find(node.Successor[i])
-		return Node{}
+		return BasicNode{}
 	}
 }
 
 // n′ thinks it might be our predecessor.
-func (node *Node) notify(n Node) {
+func (node *Node) notify(n BasicNode) {
 	if node.Predecessor == nil || between(n.Id, node.Predecessor.Id, node.Id) {
 		node.Predecessor = &n
-		//n.updateImmSuccessorRpc(node)
 	}
 }
 
 // called periodically. refreshes finger table entries.
 // next stores the index of the next finger to fix.
 func (node *Node) fixFingers() {
-	node.FingerTable = []*Node{}
+	node.FingerTable = []*BasicNode{}
 	for i := 0; i < m; i++ {
 		if i > m {
 			i = 0
@@ -110,7 +113,7 @@ func (node *Node) fixFingers() {
 
 		jump := node.jump(i)
 		_, suc := node.findSuccessor(jump)
-		node.FingerTable = append(node.FingerTable, fingerEntry(&suc))
+		node.FingerTable = append(node.FingerTable, &BasicNode{Address: suc.Address, Id: suc.Id})
 	}
 	print("")
 }
@@ -138,13 +141,11 @@ func (node *Node) checkPredecessor() {
 
 // ask node n to find the successor of id
 // or a better node to continue the search with
-func (node *Node) findSuccessor(id []byte) (bool, Node) {
+func (node *Node) findSuccessor(id []byte) (bool, BasicNode) {
 	prev := node.Id
 	for _, suc := range node.Successor {
 		if between(id, prev, suc.Id) {
 			return true, *suc
-		} else if between(id, suc.Id, prev) {
-			return true, *node
 		}
 		prev = suc.Id
 	}
@@ -164,7 +165,7 @@ func between(elt, start, end []byte) bool {
 }
 
 // search the local table for the highest predecessor of id
-func (node *Node) closestPrecedingNode(id []byte) Node {
+func (node *Node) closestPrecedingNode(id []byte) BasicNode {
 	for i := m - 1; i > 1; i-- {
 		if len(node.FingerTable) <= i {
 			continue
