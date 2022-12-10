@@ -21,6 +21,15 @@ func main() {
 
 	if *ja == "" {
 		myNode.create()
+		one := []byte("1")
+		two := []byte("2")
+		three := []byte("3")
+
+
+		res := between(two, one, three)
+		res = between(two, three, one)
+		res = between(one, three, two)
+		res = res
 	} else {
 		joinAddress := NodeAddress(*ja + ":" + strconv.Itoa(*jp))
 		joinNode := BasicNode{Address: joinAddress}
@@ -92,6 +101,7 @@ func PrintState() {
 		fmt.Println("\nNo Successors Found")
 	}
 
+	/*
 	if len(myNode.FingerTable) > 0 {
 		fmt.Println("\n+-+-+-+-+-+-+ Fingertable info +-+-+-+-+-+--+")
 		for i, finger := range myNode.FingerTable {
@@ -104,6 +114,7 @@ func PrintState() {
 	} else {
 		fmt.Println("\nFingertable Empty")
 	}
+	 */
 	if myNode.Predecessor != nil {
 		fmt.Println("\n+-+-+-+-+-+-+ Predecessor info +-+-+-+-+-+--+")
 		fmt.Println("ID: ", string(myNode.Predecessor.Id), "\nIP/port: ", myNode.Predecessor.Address)

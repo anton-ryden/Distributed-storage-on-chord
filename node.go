@@ -52,15 +52,17 @@ func newNode(ip string, port int, iArg string, r int) Node {
 // successor, and tells the successor about n.
 func (node *Node) stabilize() {
 	node.updateRpc(node.Successor[0])
+	/*
 	x := node.getPredecessorRPC(node.Successor[0])
 
 	if bytes.Equal(x.Id, node.Id) || bytes.Equal(x.Id, node.Successor[0].Id) {
 		node.Successor[0] =  &x
 	}
 
-	if !bytes.Equal(node.Successor[0].Id, node.Id) {
-		node.Successor[0].notifyRpc(node)
-	}
+
+	 */
+	node.Successor[0].notifyRpc(node)
+
 }
 
 // create a new Chord ring.
@@ -76,7 +78,8 @@ func (node *Node) join(joinNode BasicNode) {
 	successor := find(node.Id, joinNode)
 	// if node did not exist we add joiNode as successor
 	node.Successor = append(node.Successor, &successor)
-	node.Successor[0].updateImmSuccessorRpc(node)
+	predOfSuc := node.getPredecessorRPC(node.Successor[0])
+	predOfSuc.updateImmSuccessorRpc(node)
 }
 
 func find(id []byte, start BasicNode) BasicNode {
@@ -118,14 +121,6 @@ func (node *Node) fixFingers() {
 	print("")
 }
 
-func fingerEntry(node *Node) *Node {
-	retNode := Node{
-		Address: node.Address,
-		Id:      node.Id,
-	}
-	return &retNode
-}
-
 // called periodically. checks whether predecessor has failed.
 func (node *Node) checkPredecessor() {
 	if node.Predecessor == nil {
@@ -147,12 +142,13 @@ func (node *Node) findSuccessor(id []byte) (bool, BasicNode) {
 		if between(id, prev, suc.Id) {
 			return true, *suc
 		}
-		prev = suc.Id
+			prev = suc.Id
 	}
 	return false, node.closestPrecedingNode(id)
 }
 
 func between(elt, start, end []byte) bool {
+
 	switch bytes.Compare(start, end) {
 	case 1:
 		return bytes.Compare(start, elt) == -1 || bytes.Compare(end, elt) >= 0
@@ -162,6 +158,7 @@ func between(elt, start, end []byte) bool {
 		return bytes.Compare(start, elt) != 0
 	}
 	return false
+
 }
 
 // search the local table for the highest predecessor of id

@@ -29,9 +29,9 @@ func (node *Node) updateRpc(suc *BasicNode) {
 	if err != nil {
 		log.Println("Ring.Update", err)
 	}
-	sucSuc := reply.Successor
-	if !bytes.Equal(sucSuc[0].Id, suc.Id) {
-		node.Successor = append([]*BasicNode{suc}, sucSuc...)
+	replySuccessor := reply.Successor
+	if !bytes.Equal(replySuccessor[0].Id, suc.Id) {
+		node.Successor = append([]*BasicNode{suc}, replySuccessor...)
 		sucLen := len(node.Successor)
 		if sucLen > *r {
 			node.Successor = node.Successor[:sucLen-1]
@@ -46,9 +46,9 @@ func (node *Node) getPredecessorRPC (predof *BasicNode) BasicNode{
 	checkError(err)
 
 	var reply *BasicNode
-	err = client.Call("Ring.Update", false, &reply)
+	err = client.Call("Ring.GetPredecessor", false, &reply)
 	if err != nil {
-		log.Println("Ring.Update", err)
+		log.Println("Ring.GetPredecessor", err)
 	}
 	return *reply
 }
@@ -67,8 +67,16 @@ func (node *BasicNode) updateImmSuccessorRpc(suc *Node) {
 	}
 }
 
-func (r *Ring) UpdateImmSuccessor(immSuc *BasicNode, reply *bool) error {
-	myNode.Successor[0] = immSuc
+func (ring *Ring) UpdateImmSuccessor(newSuccessor *BasicNode, reply *bool) error {
+	// Append new successor in the begging of successor array
+	oldSuccessors := myNode.Successor
+	myNode.Successor = append([]*BasicNode{newSuccessor}, oldSuccessors...)
+
+	// Check if array length need to be changed
+	sucLen := len(myNode.Successor)
+	if sucLen > *r {
+		myNode.Successor = myNode.Successor[:sucLen-1]
+	}
 	return nil
 }
 
@@ -120,27 +128,27 @@ func (node *BasicNode) findSuccessorRpc(id []byte) (bool, BasicNode) {
 	return reply.Found, reply.Node
 }
 
-func (r *Ring) Update(inBool bool, reply *Node) error {
+func (ring *Ring) Update(inBool bool, reply *Node) error {
 	*reply = myNode
 	return nil
 }
 
-func (r *Ring) Notify(notifyOf BasicNode, reply *bool) error {
+func (ring *Ring) Notify(notifyOf BasicNode, reply *bool) error {
 	myNode.notify(notifyOf)
 	return nil
 }
 
-func (r *Ring) GetPredecessor(inBool bool, reply *BasicNode) error {
-	reply = myNode.Predecessor
+func (ring *Ring) GetPredecessor(inBool bool, reply *BasicNode) error {
+	*reply = *myNode.Predecessor
 	return nil
 }
 
-func (r *Ring) CheckAlive(inBool bool, reply *bool) error {
+func (ring *Ring) CheckAlive(inBool bool, reply *bool) error {
 	*reply = true
 	return nil
 }
 
-func (r *Ring) FindSuccessor(id []byte, reply *RpcReply) error {
+func (ring *Ring) FindSuccessor(id []byte, reply *RpcReply) error {
 	found, retNode := myNode.findSuccessor(id)
 	reply.Found = found
 	reply.Node = retNode
