@@ -70,13 +70,16 @@ func (node *Node) create() {
 
 // join a Chord ring containing node n′.
 func (node *Node) join(joinNode BasicNode) {
-	log.Println("Joining: " + joinNode.Address + "\t")
+	log.Println("Sending request to join to: " + joinNode.Address + "\t")
 	successor := find(node.Id, joinNode)
 	// if node did not exist we add joiNode as successor
 	node.Successor = append(node.Successor, &successor)
-
 	predOfSuc := node.rpcGetPredecessorOf(node.Successor[0])
 	node.rpcUpdateSuccessorOf(&predOfSuc)
+	log.Println("Immediate successor is:\n",
+		"Node:\n",
+		"\tAddress:", node.Successor[0].Address, "\n",
+		"\tId:\t", string(node.Successor[0].Id))
 }
 
 func find(id []byte, start BasicNode) BasicNode {
@@ -99,6 +102,7 @@ func find(id []byte, start BasicNode) BasicNode {
 func (node *Node) notify(n BasicNode) {
 	if node.Predecessor == nil || between(n.Id, node.Predecessor.Id, node.Id) {
 		node.Predecessor = &n
+		log.Println("New Predecessor:\nNode:\n\tAddress:", node.Predecessor.Address, "\n\tId:\t", string(node.Predecessor.Id))
 	}
 }
 

@@ -37,9 +37,13 @@ func (node *Node) rpcCopySuccessor() {
 	var response *Node
 	var err error
 	var suc *BasicNode
+	var i int
 	// if call fails try next successor in list until list is empty.
 	// When list becomes empty set successor to nil
-	for _, suc = range node.Successor {
+	for i, suc = range node.Successor {
+		if i != 0 {
+			log.Println("Successor is dead. Trying next successor in list:\nNode:\n\tAddress:", node.Successor[0].Address, "\n\tId:\t", string(node.Successor[0].Id))
+		}
 		err := call(suc.Address, "Ring.CopySuccessor", false, &response)
 		if err == nil { // if call did not generate error
 			break
@@ -49,8 +53,8 @@ func (node *Node) rpcCopySuccessor() {
 	if err != nil {
 		myself := BasicNode{Address: node.Address, Id: node.Id}
 		node.Successor[0] = &myself
-
-		log.Fatalln("Method: Ring.rpcCopySuccessor Error: ", err)
+		log.Println("All successors in list is dead new succesor is:\nNode:\n\tAddress:", node.Successor[0].Address, "\n\tId:\t", string(node.Successor[0].Id))
+		//log.Fatalln("Method: Ring.rpcCopySuccessor Error: ", err)
 		return
 	}
 
@@ -71,7 +75,7 @@ func (node *Node) rpcGetPredecessorOf(getMyPredecessor *BasicNode) BasicNode {
 	var response *BasicNode
 	err := call(getMyPredecessor.Address, "Ring.GetPredecessor", false, &response)
 	if err != nil {
-		log.Fatalln("Method: Ring.GetPredecessor Error: ", err)
+		log.Println("Method: Ring.GetPredecessor Error: ", err)
 	}
 	return *response
 }
@@ -104,6 +108,12 @@ func (ring *Ring) UpdateSuccessorOf(newSuccessor *BasicNode, reply *bool) error 
 	if sucLen > *r {
 		myNode.Successor = myNode.Successor[:sucLen-1]
 	}
+
+	log.Println("New immediate successor:\n",
+		"Node:\n",
+		"\tAddress:", myNode.Successor[0].Address, "\n",
+		"\tId:\t", string(myNode.Successor[0].Id))
+
 	return nil
 }
 
@@ -112,7 +122,7 @@ func (node *BasicNode) rpcNotifyOf(notifyOfMe *Node) {
 	sendNode := BasicNode{Address: notifyOfMe.Address, Id: notifyOfMe.Id}
 	err := call(node.Address, "Ring.NotifyOf", sendNode, &response)
 	if err != nil {
-		log.Fatalln("Method: Ring.NotifyOf Error: ", err)
+		log.Println("Method: Ring.NotifyOf Error: ", err)
 	}
 }
 
@@ -126,7 +136,7 @@ func (node *BasicNode) rpcIsAlive() bool {
 	err := call(node.Address, "Ring.CheckAlive", false, &response)
 	if err != nil {
 		log.Println("Address: ", node.Address, " Id: ", string(node.Id), " is no longer alive"+
-			"Predecessor is now nil")
+			", Predecessor is now nil")
 		return false
 	}
 	return response
@@ -141,7 +151,7 @@ func (node *BasicNode) rpcFindSuccessor(id []byte) (bool, BasicNode) {
 	var response RpcReply
 	err := call(node.Address, "Ring.FindSuccessor", &id, &response)
 	if err != nil {
-		log.Fatalln("Method: Ring.FindSuccessor Error: ", err)
+		log.Println("Method: Ring.FindSuccessor Error: ", err)
 	}
 	return response.Found, response.Node
 }
