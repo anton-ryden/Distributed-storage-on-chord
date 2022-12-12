@@ -26,9 +26,9 @@ type Node struct {
 }
 
 // BasicNode Struct: For nodes inside Node struct. Require less information and no recursion.
-type BasicNode struct{
+type BasicNode struct {
 	Address string
-	Id	[]byte
+	Id      []byte
 }
 
 func newNode(ip string, port int, iArg string, r int) Node {
@@ -50,11 +50,12 @@ func newNode(ip string, port int, iArg string, r int) Node {
 // called periodically. verifies n’s immediate
 // successor, and tells the successor about n.
 func (node *Node) stabilize() {
-	node.rpcCopySuccessorOf(node.Successor[0])
+	// if it fails for some reason
+	node.rpcCopySuccessor()
 	x := node.rpcGetPredecessorOf(node.Successor[0])
 
 	if x.Id != nil && between(x.Id, node.Id, node.Successor[0].Id) {
-		node.Successor[0] =  &x
+		node.Successor[0] = &x
 	}
 
 	node.Successor[0].rpcNotifyOf(node)
@@ -122,9 +123,11 @@ func (node *Node) checkPredecessor() {
 	if node.Predecessor == nil {
 		return
 	}
+
 	if bytes.Equal(node.Predecessor.Id, node.Id) {
 		return
 	}
+
 	if !node.Predecessor.rpcIsAlive() {
 		node.Predecessor = nil
 	}
@@ -138,7 +141,7 @@ func (node *Node) findSuccessor(id []byte) (bool, BasicNode) {
 		if between(id, prev, suc.Id) {
 			return true, *suc
 		}
-			prev = suc.Id
+		prev = suc.Id
 	}
 	return false, node.closestPrecedingNode(id)
 }
