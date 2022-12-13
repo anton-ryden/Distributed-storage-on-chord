@@ -70,21 +70,18 @@ func StoreFile(filepath string) {
 
 	slicedPath := strings.Split(filepath, "/")
 	filename := slicedPath[len(slicedPath)-1]
-	found := true
 
 	if _, err := os.Stat(filepath); err == nil {
-		//foundNode, found, hashed := Lookup(filename)
-
-		hashed := hash(filename)
-		myBasicNode := BasicNode{Address: myNode.Address, Id: myNode.Id}
-		foundNode := find(hashed, myBasicNode)
+		foundNode, found, hashed := Lookup(filename)
 
 		myFile := BasicFile{Filename: filename, Key: hashed}
 
-		if found == true {
+		if found != true && foundNode.Id != nil {
 			foundNode.rpcStoreFile(myFile)
 			fmt.Println("\nFile successfully uploaded to: ")
 			fmt.Println("\tID: ", string(foundNode.Id), "\n\tIP/port: ", foundNode.Address)
+		} else {
+			fmt.Println("\nFile already in the ring on the node above ^^")
 		}
 	} else {
 		fmt.Println("\nError: file does not exist")
@@ -101,15 +98,14 @@ func Lookup(filename string) (BasicNode, bool, []byte) {
 
 	if isFile == true {
 
-		fmt.Println("+-+-+-+-+-+-+ Node with file info +-+-+-+-+-+--+")
+		fmt.Println("\n+-+-+-+-+-+-+ Node with file info +-+-+-+-+-+--+")
 		fmt.Println("\tID: ", string(foundNode.Id), "\n\tIP/port: ", foundNode.Address)
 		fmt.Println("\t-------------------------------")
 
-		return foundNode, true, hashed
 	} else {
-		fmt.Println("\n File not found")
-		return BasicNode{}, false, hashed
+		fmt.Println("\nFile not found")
 	}
+	return foundNode, isFile, hashed
 }
 
 func PrintState() {
