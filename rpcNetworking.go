@@ -163,6 +163,19 @@ func (ring *Ring) FindSuccessor(id []byte, reply *RpcReply) error {
 	return nil
 }
 
+func (node *BasicNode) rpcStoreFile(filename string) {
+	var response *bool
+	err := call(node.Address, "Ring.GetPredecessor", filename, &response)
+	if err != nil {
+		log.Println("Method: Ring.GetPredecessor Error: ", err)
+	}
+}
+
+func (ring *Ring) StoreFile(filename string, reply *bool) error {
+	myNode.Bucket = append(myNode.Bucket, filename)
+	return nil
+}
+
 func initListen() {
 	ring := new(Ring)
 	rpc.Register(ring)

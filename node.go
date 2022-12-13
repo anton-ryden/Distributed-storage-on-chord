@@ -11,8 +11,6 @@ import (
 
 const m = sha1.Size * 9
 
-type Key string
-
 var maxSteps = 32
 
 type Node struct {
@@ -22,7 +20,7 @@ type Node struct {
 	Successor   []*BasicNode
 	Id          []byte
 
-	Bucket map[Key]string
+	Bucket []string
 }
 
 // BasicNode Struct: For nodes inside Node struct. Require less information and no recursion.

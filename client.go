@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // Set with information from arguments
@@ -43,30 +44,49 @@ func main() {
 func scan() {
 	// Init for reading stdin
 	scanner := bufio.NewScanner((os.Stdin))
-
-	functions := map[string]interface{}{
-		"StoreFile":  StoreFile,
-		"Lookup":     Lookup,
-		"PrintState": PrintState,
-	}
-
 	for {
 		scanner.Scan()
 		txt := scanner.Text()
-		for key, element := range functions {
-			if key == txt {
-				element.(func())()
-			}
+		sliceText := strings.Split(txt, " ")
+
+		switch sliceText[0] {
+		case "StoreFile":
+			StoreFile(sliceText[1])
+			break
+		case "Lookup":
+			Lookup(sliceText[1])
+			break
+		case "PrintState":
+			PrintState()
+			break
 		}
 	}
 }
 
-func StoreFile() {
+func StoreFile(filepath string) {
+	fmt.Println("Filepath: " + filepath)
+	slicedPath := strings.Split(filepath, "/")
+	filename := slicedPath[len(slicedPath)-1]
+
+	foundNode := Lookup(filename)
+	foundNode.rpcStoreFile(filename)
+
+	fmt.Println("File successfully uploaded to: ")
+	fmt.Println("\tID: ", string(foundNode.Id), "\n\tIP/port: ", foundNode.Address)
 
 }
 
-func Lookup() {
+func Lookup(filename string) BasicNode {
+	fmt.Println("Filename: " + filename)
+	hashed := hash(filename)
+	myBasicNode := BasicNode{Address: myNode.Address, Id: myNode.Id}
+	foundNode := find(hashed, myBasicNode)
 
+	fmt.Println("\n+-+-+-+-+-+-+ Node with file info +-+-+-+-+-+--+")
+	fmt.Println("\tID: ", string(foundNode.Id), "\n\tIP/port: ", foundNode.Address)
+	fmt.Println("\t-------------------------------")
+
+	return foundNode
 }
 
 func PrintState() {
@@ -85,7 +105,6 @@ func PrintState() {
 		fmt.Println("\nNo Successors Found")
 	}
 
-	/*
 	if len(myNode.FingerTable) > 0 {
 		fmt.Println("\n+-+-+-+-+-+-+ Fingertable info +-+-+-+-+-+--+")
 		for i, finger := range myNode.FingerTable {
@@ -98,7 +117,7 @@ func PrintState() {
 	} else {
 		fmt.Println("\nFingertable Empty")
 	}
-	 */
+
 	if myNode.Predecessor != nil {
 		fmt.Println("\n+-+-+-+-+-+-+ Predecessor info +-+-+-+-+-+--+")
 		fmt.Println("ID: ", string(myNode.Predecessor.Id), "\nIP/port: ", myNode.Predecessor.Address)
