@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"log"
 	"math/big"
-	"os"
 	"strconv"
 	"time"
 )
@@ -31,9 +30,9 @@ type BasicNode struct {
 }
 
 type BasicFile struct {
-	Filename string
-	Key      []byte
-	File     os.File
+	Filename    string
+	Key         []byte
+	FileContent []byte
 }
 
 func newNode(ip string, port int, iArg string, r int) Node {

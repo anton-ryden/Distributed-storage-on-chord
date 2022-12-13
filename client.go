@@ -67,22 +67,23 @@ func scan() {
 }
 
 func StoreFile(filepath string) {
-	fmt.Println("Filepath: " + filepath)
-
 	slicedPath := strings.Split(filepath, "/")
 	filename := slicedPath[len(slicedPath)-1]
 
 	if _, err := os.Stat(filepath); err == nil {
 		foundNode, found, hashed := Lookup(filename)
-		file, err := os.Open(filepath)
+		fileContent, err := os.ReadFile(filepath)
 		if err != nil {
 			log.Println("os.open error:", err)
 			return
 		}
-		myFile := BasicFile{Filename: filename, Key: hashed, File: *file}
+		myFile := BasicFile{Filename: filename, Key: hashed, FileContent: fileContent}
 
-		if found != true && foundNode.Id != nil {
-			foundNode.rpcStoreFile(myFile)
+		if !found && foundNode.Id != nil {
+			result := foundNode.rpcStoreFile(myFile)
+			if !result {
+				return
+			}
 			fmt.Println("\nFile successfully uploaded to: ")
 			fmt.Println("\tID: ", string(foundNode.Id), "\n\tIP/port: ", foundNode.Address)
 		} else {
@@ -108,7 +109,7 @@ func Lookup(filename string) (BasicNode, bool, []byte) {
 		fmt.Println("\t-------------------------------")
 
 	} else {
-		fmt.Println("\nFile not found")
+		fmt.Println("\nFile does not exist in ring")
 	}
 	return foundNode, isFile, hashed
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/rpc"
@@ -185,21 +184,37 @@ func (ring *Ring) FileExist(key []byte, reply *bool) error {
 	return nil
 }
 
-func (node *BasicNode) rpcStoreFile(filename BasicFile) {
+func (node *BasicNode) rpcStoreFile(file BasicFile) bool {
 	var response *bool
-	err := call(node.Address, "Ring.StoreFile", filename, &response)
+	err := call(node.Address, "Ring.StoreFile", file, &response)
 	if err != nil {
 		log.Println("Method: Ring.StoreFile Error: ", err)
 	}
+	return *response
 }
 
 func (ring *Ring) StoreFile(file BasicFile, reply *bool) error {
-	if _, err := os.Stat(file.Filename); err != nil {
-		myString := string(file.Key[:])
-		myNode.Bucket[myString] = file.Filename
-	} else {
-		fmt.Println("file already on system")
+	_, err := os.Stat(file.Filename)
+	if err != nil {
+		*reply = false
+		return err
 	}
+	myString := string(file.Key)
+	myNode.Bucket[myString] = file.Filename
+
+	newFile, err := os.Create(file.Filename)
+	if err != nil {
+		*reply = false
+		return err
+	}
+	defer newFile.Close()
+	_, err = newFile.Write(file.FileContent)
+	if err != nil {
+		*reply = false
+		return err
+	}
+
+	*reply = true
 	return nil
 }
 
