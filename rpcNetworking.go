@@ -163,16 +163,37 @@ func (ring *Ring) FindSuccessor(id []byte, reply *RpcReply) error {
 	return nil
 }
 
-func (node *BasicNode) rpcStoreFile(filename string) {
+func (node *BasicNode) rpcFileExist(key []byte) bool {
 	var response *bool
-	err := call(node.Address, "Ring.GetPredecessor", filename, &response)
+	err := call(node.Address, "Ring.FileExist", key, &response)
 	if err != nil {
-		log.Println("Method: Ring.GetPredecessor Error: ", err)
+		log.Println("Method: Ring.FileExist Error: ", err)
+	}
+	return *response
+}
+
+func (ring *Ring) FileExist(key []byte, reply *bool) error {
+	myString := string(key[:])
+	_, found := myNode.Bucket[myString]
+	if found {
+		*reply = true
+	} else {
+		*reply = false
+	}
+	return nil
+}
+
+func (node *BasicNode) rpcStoreFile(filename BasicFile) {
+	var response *bool
+	err := call(node.Address, "Ring.StoreFile", filename, &response)
+	if err != nil {
+		log.Println("Method: Ring.StoreFile Error: ", err)
 	}
 }
 
-func (ring *Ring) StoreFile(filename string, reply *bool) error {
-	myNode.Bucket = append(myNode.Bucket, filename)
+func (ring *Ring) StoreFile(file BasicFile, reply *bool) error {
+	myString := string(file.Key[:])
+	myNode.Bucket[myString] = file.Filename
 	return nil
 }
 

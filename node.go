@@ -20,13 +20,18 @@ type Node struct {
 	Successor   []*BasicNode
 	Id          []byte
 
-	Bucket []string
+	Bucket map[string]string
 }
 
 // BasicNode Struct: For nodes inside Node struct. Require less information and no recursion.
 type BasicNode struct {
 	Address string
 	Id      []byte
+}
+
+type BasicFile struct {
+	Filename string
+	Key      []byte
 }
 
 func newNode(ip string, port int, iArg string, r int) Node {
@@ -42,7 +47,8 @@ func newNode(ip string, port int, iArg string, r int) Node {
 		id = []byte(iArg)
 	}
 
-	return Node{Address: addr, Id: id}
+	myBucket := make(map[string]string)
+	return Node{Address: addr, Id: id, Bucket: myBucket}
 }
 
 // called periodically. verifies n’s immediate
