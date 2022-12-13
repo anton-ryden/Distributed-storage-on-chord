@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -73,8 +74,12 @@ func StoreFile(filepath string) {
 
 	if _, err := os.Stat(filepath); err == nil {
 		foundNode, found, hashed := Lookup(filename)
-
-		myFile := BasicFile{Filename: filename, Key: hashed}
+		file, err := os.Open(filepath)
+		if err != nil {
+			log.Println("os.open error:", err)
+			return
+		}
+		myFile := BasicFile{Filename: filename, Key: hashed, File: *file}
 
 		if found != true && foundNode.Id != nil {
 			foundNode.rpcStoreFile(myFile)

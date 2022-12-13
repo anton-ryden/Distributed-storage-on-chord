@@ -5,11 +5,12 @@ import (
 	"crypto/sha1"
 	"log"
 	"math/big"
+	"os"
 	"strconv"
 	"time"
 )
 
-const m = sha1.Size * 9
+const m = sha1.Size * 24
 
 var maxSteps = 32
 
@@ -32,6 +33,7 @@ type BasicNode struct {
 type BasicFile struct {
 	Filename string
 	Key      []byte
+	File     os.File
 }
 
 func newNode(ip string, port int, iArg string, r int) Node {

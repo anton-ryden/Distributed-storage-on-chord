@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"net/rpc"
+	"os"
 	"strconv"
 	"time"
 )
@@ -192,8 +194,12 @@ func (node *BasicNode) rpcStoreFile(filename BasicFile) {
 }
 
 func (ring *Ring) StoreFile(file BasicFile, reply *bool) error {
-	myString := string(file.Key[:])
-	myNode.Bucket[myString] = file.Filename
+	if _, err := os.Stat(file.Filename); err != nil {
+		myString := string(file.Key[:])
+		myNode.Bucket[myString] = file.Filename
+	} else {
+		fmt.Println("file already on system")
+	}
 	return nil
 }
 
