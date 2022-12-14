@@ -13,6 +13,7 @@ import (
 var a, ja, i *string
 var p, jp, ts, tff, tcp, r *int
 
+// This clients node
 var myNode Node
 
 // Main
@@ -32,8 +33,10 @@ func main() {
 	// Init for listening
 	initListen()
 
+	// Init go routines that run fixFingers, Stabilize and checkPredecessor
 	initRoutines()
 
+	// Go routine for scanning input from user
 	go scan()
 
 	//Main for loop
@@ -66,13 +69,14 @@ func scan() {
 	}
 }
 
-func StoreFile(filepath string) {
-	slicedPath := strings.Split(filepath, "/")
+// Stores file from filePath in the ring
+func StoreFile(filePath string) {
+	slicedPath := strings.Split(filePath, "/")
 	filename := slicedPath[len(slicedPath)-1]
 
-	if _, err := os.Stat(filepath); err == nil {
+	if _, err := os.Stat(filePath); err == nil {
 		foundNode, found, hashed := Lookup(filename)
-		fileContent, err := os.ReadFile(filepath)
+		fileContent, err := os.ReadFile(filePath)
 		if err != nil {
 			log.Println("os.open error:", err)
 			return
@@ -94,9 +98,10 @@ func StoreFile(filepath string) {
 	}
 }
 
-func Lookup(filename string) (BasicNode, bool, []byte) {
-	fmt.Println("\nFilename: " + filename)
-	hashed := hash(filename)
+// Lookups if fileName exists in the ring
+func Lookup(fileName string) (BasicNode, bool, []byte) {
+	fmt.Println("\nFilename: " + fileName)
+	hashed := hash(fileName)
 	myBasicNode := BasicNode{Address: myNode.Address, Id: myNode.Id}
 	foundNode := find(hashed, myBasicNode)
 
@@ -114,6 +119,7 @@ func Lookup(filename string) (BasicNode, bool, []byte) {
 	return foundNode, isFile, hashed
 }
 
+// Print information of this clients node
 func PrintState() {
 
 	fmt.Println("+-+-+-+-+-+ Node info +-+-+-+-+-+-\n")
@@ -134,9 +140,7 @@ func PrintState() {
 		fmt.Println("\n+-+-+-+-+-+-+ Fingertable info +-+-+-+-+-+--+")
 		for i, finger := range myNode.FingerTable {
 			if finger != nil {
-				//fmt.Println("\n\t-----Finger node", i, "info-----")
 				fmt.Println("\tFinger node: ", i, "\tID: ", string(finger.Id), "\tIP/port: ", finger.Address)
-				//fmt.Println("\t-------------------------------")
 			}
 		}
 	} else {
