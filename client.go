@@ -55,10 +55,18 @@ func scan() {
 
 		switch sliceText[0] {
 		case "StoreFile":
-			StoreFile(sliceText[1])
+			if len(sliceText) == 2 {
+				StoreFile(sliceText[1])
+			} else {
+				fmt.Println("No filepath was given")
+			}
 			break
 		case "Lookup":
-			Lookup(sliceText[1])
+			if len(sliceText) == 2 {
+				Lookup(sliceText[1])
+			} else {
+				fmt.Println("No filename was given")
+			}
 			break
 		case "PrintState":
 			PrintState()
@@ -78,7 +86,7 @@ func StoreFile(filePath string) {
 		foundNode, found, hashed := Lookup(filename)
 		fileContent, err := os.ReadFile(filePath)
 		if err != nil {
-			log.Println("os.open error:", err)
+			log.Println("Method: os.ReadFile Error:", err)
 			return
 		}
 		myFile := BasicFile{Filename: filename, Key: hashed, FileContent: fileContent}
@@ -96,6 +104,7 @@ func StoreFile(filePath string) {
 	} else {
 		fmt.Println("\nError: file does not exist")
 	}
+	myNode.rpcSendBackupTo(*myNode.Successor[0])
 }
 
 // Lookups if fileName exists in the ring
