@@ -17,13 +17,13 @@ var maxSteps = 32
 
 // Struct for this clients node
 type Node struct {
-	Address     string
-	FingerTable []*BasicNode
-	Predecessor *BasicNode
-	Successor   []*BasicNode
-	Id          []byte
-
-	Bucket map[string]string
+	Address      string
+	FingerTable  []*BasicNode
+	Predecessor  *BasicNode
+	Successor    []*BasicNode
+	Id           []byte
+	Bucket       map[string]string
+	BackupBucket map[string]string
 }
 
 // BasicNode Struct: For nodes inside Node struct. Require less information and no recursion
@@ -41,6 +41,8 @@ type BasicFile struct {
 
 // Creates a new client node
 func newNode(ip string, port int, iArg string, r int) Node {
+	// Setups the certificate to communicate with other nodes with tls
+	setConfig()
 	// Error handling in arguments file, so we only need to check if ja is set
 	addr := ip + ":" + strconv.Itoa(port)
 
@@ -54,7 +56,8 @@ func newNode(ip string, port int, iArg string, r int) Node {
 	}
 
 	myBucket := make(map[string]string)
-	return Node{Address: addr, Id: id, Bucket: myBucket}
+	myBackupBucket := make(map[string]string)
+	return Node{Address: addr, Id: id, Bucket: myBucket, BackupBucket: myBackupBucket}
 }
 
 // Called periodically. verifies node's immediate
@@ -71,6 +74,7 @@ func (node *Node) stabilize() {
 
 	// Notify immediate successor of node
 	node.Successor[0].rpcNotifyOf(node)
+	//node.Successor[0].rpcUpdateBackupBucketOf(node)
 }
 
 // n′ thinks it might be our predecessor.

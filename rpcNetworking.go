@@ -1,15 +1,14 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/rpc"
 	"os"
-	"strconv"
-	"time"
 )
-
-var listener *net.TCPListener
 
 type Ring int
 
@@ -22,19 +21,48 @@ type RpcReply struct {
 	Node  BasicNode
 }
 
+var clientConfig *tls.Config
+
+// Sets the tls config, so it can communicate with other nodes with tls
+func setConfig() {
+	// Read ca's cert
+	caCert, err := ioutil.ReadFile("certs/ca.crt")
+	if err != nil {
+		log.Fatal(caCert)
+	}
+
+	// Create cert pool and append ca's cert
+	certPool := x509.NewCertPool()
+	if ok := certPool.AppendCertsFromPEM(caCert); !ok {
+		log.Fatal(err)
+	}
+
+	// Read client cert
+	clientCert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	clientConfig = &tls.Config{
+		Certificates: []tls.Certificate{clientCert},
+		RootCAs:      certPool,
+	}
+}
+
 // Function that performs the sends rpc request and receive reply.
 func call(address string, method string, request interface{}, response interface{}) error {
 	// Create connection with a timeout value
-	conn, err := net.DialTimeout("tcp", address, time.Millisecond*timeoutMs)
+	conn, err := tls.Dial("tcp", address, clientConfig)
+
 	if err != nil {
-		return err
+		log.Fatalf("client: dial: %s", err)
 	}
 
+	defer conn.Close()
 	client := rpc.NewClient(conn)
 	defer client.Close()
 	// Make request
 	err = client.Call(method, request, response)
-
 	return err
 }
 
@@ -219,8 +247,8 @@ func (node *BasicNode) rpcStoreFile(file BasicFile) bool {
 // Receives rpc request to store file on this node
 func (ring *Ring) StoreFile(file BasicFile, reply *bool) error {
 	_, err := os.Stat(file.Filename)
-	// If file did not exist on this pc return with error
-	if err != nil {
+	// If file did exist on this pc return with error
+	if err == nil {
 		*reply = false
 		return err
 	}
@@ -247,26 +275,127 @@ func (ring *Ring) StoreFile(file BasicFile, reply *bool) error {
 	return nil
 }
 
-// Initializes a port to listen for rpc calls
-func initListen() {
-	ring := new(Ring)
-	rpc.Register(ring)
-	tcpAddr, err := net.ResolveTCPAddr("tcp", ":"+strconv.Itoa(*p))
+// Sends backup bucket to node, the response is the file that node does not have in backup that need to be sent
+// If the node is missing files in backup we send it
+func (node *BasicNode) rpcUpdateBackupBucketOf(backupBucketNode *Node) {
+	// Send out backup bucket to see what files the node is missing
+	var response []BasicFile
+	err := call(node.Address, "Ring.UpdateBackupBucketOf", backupBucketNode.BackupBucket, &response)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println("Method: UpdateBackupBucketOf Error: ", err)
 	}
 
-	listener, err = net.ListenTCP("tcp", tcpAddr)
+	// If the list of files node sent us is not empty we send these files
+	if len(response) > 0 {
+		for _, file := range response {
+			node.rpcStoreFile(file)
+		}
+	}
+
+}
+
+func (ring *Ring) UpdateBackupBucketOf(backupBucket map[string]string, reply []BasicFile) error {
+	for _, temp := range backupBucket {
+		temp = temp
+	}
+	reply = nil
+	return nil
+}
+
+func (node *Node) rpcSendBackupTo(toNode BasicNode) {
+	var fileArray []BasicFile
+	for key, fileName := range node.Bucket {
+		if _, err := os.Stat(fileName); err == nil {
+			fileContent, err := os.ReadFile(fileName)
+			if err != nil {
+				log.Println("Method: os.ReadFile Error:", err)
+				return
+			}
+			fileArray = append(fileArray, BasicFile{Filename: fileName, Key: []byte(key), FileContent: fileContent})
+		}
+	}
+	var response *bool
+	err := call(toNode.Address, "Ring.SendBackupTo", &fileArray, &response)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println("Method: Ring.StoreFile Error: ", err)
 	}
 }
 
+func (ring *Ring) SendBackupTo(files []BasicFile, reply *bool) error {
+	for _, file := range files {
+
+		if _, err := os.Stat(file.Filename); err == nil {
+			// Add file to bucket
+			myString := string(file.Key)
+			myNode.BackupBucket[myString] = file.Filename
+
+			// Create new file to store information in
+			newFile, err := os.Create(file.Filename)
+			if err != nil {
+				*reply = false
+				return err
+			}
+			defer newFile.Close()
+
+			// Store file information in the new file
+			_, err = newFile.Write(file.FileContent)
+			if err != nil {
+				*reply = false
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// Initializes a port to listen for rpc calls
+func initListen() net.Listener {
+
+	rpc.Register(new(Ring))
+
+	// read ca's cert, verify to client's certificate
+	caPem, err := ioutil.ReadFile("certs/ca.crt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// create cert pool and append ca's cert
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(caPem) {
+		log.Fatal(err)
+	}
+
+	// read server cert & key
+	serverCert, err := tls.LoadX509KeyPair("certs/server.crt", "certs/server.key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// configuration of the certificate what we want to
+	config := &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    certPool,
+	}
+
+	/*tcpAddr, err := net.ResolveTCPAddr("tcp", ":"+strconv.Itoa(*p))
+	if err != nil {
+		log.Fatalln(err)
+	}*/
+
+	listener, err := tls.Listen("tcp", myNode.Address, config)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return listener
+}
+
 // Checks for incoming rpc calls
-func listen() {
+func listen(listener net.Listener) {
 	conn, err := listener.Accept()
 	if err != nil {
 		log.Println("Listen accept error: " + err.Error())
 	}
+	defer conn.Close()
 	rpc.ServeConn(conn)
 }

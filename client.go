@@ -29,9 +29,8 @@ func main() {
 		joinNode := BasicNode{Address: joinAddress}
 		myNode.join(joinNode)
 	}
-
 	// Init for listening
-	initListen()
+	listener := initListen()
 
 	// Init go routines that run fixFingers, Stabilize and checkPredecessor
 	initRoutines()
@@ -41,7 +40,7 @@ func main() {
 
 	//Main for loop
 	for {
-		listen() // Go routine for listening to traffic
+		listen(listener) // Go routine for listening to traffic
 	}
 }
 
@@ -151,6 +150,15 @@ func PrintState() {
 			if finger != nil {
 				fmt.Println("\tFinger node: ", i, "\tID: ", string(finger.Id), "\tIP/port: ", finger.Address)
 			}
+		}
+	} else {
+		fmt.Println("\nFingertable Empty")
+	}
+
+	if len(myNode.Bucket) > 0 {
+		fmt.Println("\n+-+-+-+-+-+-+ Fingertable info +-+-+-+-+-+--+")
+		for _, bucketEntry := range myNode.Bucket {
+			fmt.Println("\tFinger node: ", i, "\tID: ", bucketEntry)
 		}
 	} else {
 		fmt.Println("\nFingertable Empty")
