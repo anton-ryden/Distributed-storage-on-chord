@@ -1,13 +1,14 @@
+// This file is for all rpc methods for everything node related
 package main
 
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/rpc"
-	"os"
 )
 
 type Ring int
@@ -55,7 +56,8 @@ func call(address string, method string, request interface{}, response interface
 	conn, err := tls.Dial("tcp", address, clientConfig)
 
 	if err != nil {
-		log.Fatalf("client: dial: %s", err)
+		fmt.Println("Method: tls.Dial Error: ", err)
+		return err
 	}
 
 	defer conn.Close()
@@ -76,7 +78,7 @@ func (node *Node) rpcCopySuccessor() {
 	// When list becomes empty set successor to myself
 	for i, suc = range node.Successor {
 		if i != 0 {
-			log.Println("Successor is dead. Trying next successor in list:\nNode:\n\tAddress:", node.Successor[0].Address, "\n\tId:\t", string(node.Successor[0].Id))
+			fmt.Println("Successor is dead. Trying next successor in list:\nNode:\n\tAddress:", node.Successor[0].Address, "\n\tId:\t", string(node.Successor[0].Id))
 		}
 		err := call(suc.Address, "Ring.CopySuccessor", false, &response)
 		if err == nil { // If call did not generate error we found the immediate successor
@@ -88,7 +90,7 @@ func (node *Node) rpcCopySuccessor() {
 	if err != nil {
 		myself := BasicNode{Address: node.Address, Id: node.Id}
 		node.Successor[0] = &myself
-		log.Println("All successors in list is dead new succesor is:\nNode:\n\tAddress:", node.Successor[0].Address, "\n\tId:\t", string(node.Successor[0].Id))
+		fmt.Println("All successors in list is dead new succesor is:\nNode:\n\tAddress:", node.Successor[0].Address, "\n\tId:\t", string(node.Successor[0].Id))
 		return
 	}
 
@@ -112,7 +114,7 @@ func (node *Node) rpcGetPredecessorOf(getMyPredecessor *BasicNode) BasicNode {
 	var response *BasicNode
 	err := call(getMyPredecessor.Address, "Ring.GetPredecessor", false, &response)
 	if err != nil {
-		log.Println("Method: Ring.GetPredecessor Error: ", err)
+		fmt.Println("Method: Ring.GetPredecessor Error: ", err)
 	}
 	return *response
 }
@@ -134,7 +136,7 @@ func (node *Node) rpcUpdateSuccessorOf(updateMySuccessor *BasicNode) {
 	send := BasicNode{Address: node.Address, Id: node.Id}
 	err := call(updateMySuccessor.Address, "Ring.UpdateSuccessorOf", send, &response)
 	if err != nil {
-		log.Fatalln("Method: Ring.UpdateSuccessorOf Error: ", err)
+		fmt.Println("Method: Ring.UpdateSuccessorOf Error: ", err)
 	}
 }
 
@@ -151,7 +153,7 @@ func (ring *Ring) UpdateSuccessorOf(newSuccessor *BasicNode, reply *bool) error 
 	}
 
 	// Tell user we got a new immediate successor
-	log.Println("New immediate successor:\n",
+	fmt.Println("New immediate successor:\n",
 		"Node:\n",
 		"\tAddress:", myNode.Successor[0].Address, "\n",
 		"\tId:\t", string(myNode.Successor[0].Id))
@@ -165,11 +167,11 @@ func (node *BasicNode) rpcNotifyOf(notifyOfMe *Node) {
 	sendNode := BasicNode{Address: notifyOfMe.Address, Id: notifyOfMe.Id}
 	err := call(node.Address, "Ring.NotifyOf", sendNode, &response)
 	if err != nil {
-		log.Println("Method: Ring.NotifyOf Error: ", err)
+		fmt.Println("Method: Ring.NotifyOf Error: ", err)
 	}
 }
 
-// Receivec rpc request to notify this node of a new predecessor
+// Receives rpc request to notify this node of a new predecessor
 func (ring *Ring) NotifyOf(notifyOf BasicNode, reply *bool) error {
 	myNode.notify(notifyOf)
 	return nil
@@ -181,7 +183,7 @@ func (node *BasicNode) rpcIsAlive() bool {
 	err := call(node.Address, "Ring.CheckAlive", false, &response)
 	// If no error the node is alive
 	if err != nil {
-		log.Println("Address: ", node.Address, " Id: ", string(node.Id), " is no longer alive"+
+		fmt.Println("Address: ", node.Address, " Id: ", string(node.Id), " is no longer alive"+
 			", Predecessor is now nil")
 		return false
 	}
@@ -199,7 +201,7 @@ func (node *BasicNode) rpcFindSuccessor(id []byte) (bool, BasicNode) {
 	var response RpcReply
 	err := call(node.Address, "Ring.FindSuccessor", &id, &response)
 	if err != nil {
-		log.Println("Method: Ring.FindSuccessor Error: ", err)
+		fmt.Println("Method: Ring.FindSuccessor Error: ", err)
 	}
 	return response.Found, response.Node
 }
@@ -209,142 +211,6 @@ func (ring *Ring) FindSuccessor(id []byte, reply *RpcReply) error {
 	found, retNode := myNode.findSuccessor(id)
 	reply.Found = found
 	reply.Node = retNode
-	return nil
-}
-
-// Send rpc request to check if file exist on node
-func (node *BasicNode) rpcFileExist(key []byte) bool {
-	var response *bool
-	err := call(node.Address, "Ring.FileExist", key, &response)
-	if err != nil {
-		log.Println("Method: Ring.FileExist Error: ", err)
-	}
-	return *response
-}
-
-// Receives rpc request to check if files exist on this node (in bucket)
-func (ring *Ring) FileExist(key []byte, reply *bool) error {
-	myString := string(key[:])
-	_, found := myNode.Bucket[myString]
-	if found {
-		*reply = true
-	} else {
-		*reply = false
-	}
-	return nil
-}
-
-// Send rpc request to store file on node
-func (node *BasicNode) rpcStoreFile(file BasicFile) bool {
-	var response *bool
-	err := call(node.Address, "Ring.StoreFile", file, &response)
-	if err != nil {
-		log.Println("Method: Ring.StoreFile Error: ", err)
-	}
-	return *response
-}
-
-// Receives rpc request to store file on this node
-func (ring *Ring) StoreFile(file BasicFile, reply *bool) error {
-	_, err := os.Stat(file.Filename)
-	// If file did exist on this pc return with error
-	if err == nil {
-		*reply = false
-		return err
-	}
-
-	// Add file to bucket
-	myString := string(file.Key)
-	myNode.Bucket[myString] = file.Filename
-
-	// Create new file to store information in
-	newFile, err := os.Create(file.Filename)
-	if err != nil {
-		*reply = false
-		return err
-	}
-	defer newFile.Close()
-
-	// Store file information in the new file
-	_, err = newFile.Write(file.FileContent)
-	if err != nil {
-		*reply = false
-		return err
-	}
-	*reply = true
-	return nil
-}
-
-// Sends backup bucket to node, the response is the file that node does not have in backup that need to be sent
-// If the node is missing files in backup we send it
-func (node *BasicNode) rpcUpdateBackupBucketOf(backupBucketNode *Node) {
-	// Send out backup bucket to see what files the node is missing
-	var response []BasicFile
-	err := call(node.Address, "Ring.UpdateBackupBucketOf", backupBucketNode.BackupBucket, &response)
-	if err != nil {
-		log.Println("Method: UpdateBackupBucketOf Error: ", err)
-	}
-
-	// If the list of files node sent us is not empty we send these files
-	if len(response) > 0 {
-		for _, file := range response {
-			node.rpcStoreFile(file)
-		}
-	}
-
-}
-
-func (ring *Ring) UpdateBackupBucketOf(backupBucket map[string]string, reply []BasicFile) error {
-	for _, temp := range backupBucket {
-		temp = temp
-	}
-	reply = nil
-	return nil
-}
-
-func (node *Node) rpcSendBackupTo(toNode BasicNode) {
-	var fileArray []BasicFile
-	for key, fileName := range node.Bucket {
-		if _, err := os.Stat(fileName); err == nil {
-			fileContent, err := os.ReadFile(fileName)
-			if err != nil {
-				log.Println("Method: os.ReadFile Error:", err)
-				return
-			}
-			fileArray = append(fileArray, BasicFile{Filename: fileName, Key: []byte(key), FileContent: fileContent})
-		}
-	}
-	var response *bool
-	err := call(toNode.Address, "Ring.SendBackupTo", &fileArray, &response)
-	if err != nil {
-		log.Println("Method: Ring.StoreFile Error: ", err)
-	}
-}
-
-func (ring *Ring) SendBackupTo(files []BasicFile, reply *bool) error {
-	for _, file := range files {
-
-		if _, err := os.Stat(file.Filename); err == nil {
-			// Add file to bucket
-			myString := string(file.Key)
-			myNode.BackupBucket[myString] = file.Filename
-
-			// Create new file to store information in
-			newFile, err := os.Create(file.Filename)
-			if err != nil {
-				*reply = false
-				return err
-			}
-			defer newFile.Close()
-
-			// Store file information in the new file
-			_, err = newFile.Write(file.FileContent)
-			if err != nil {
-				*reply = false
-				return err
-			}
-		}
-	}
 	return nil
 }
 
@@ -378,11 +244,6 @@ func initListen() net.Listener {
 		ClientCAs:    certPool,
 	}
 
-	/*tcpAddr, err := net.ResolveTCPAddr("tcp", ":"+strconv.Itoa(*p))
-	if err != nil {
-		log.Fatalln(err)
-	}*/
-
 	listener, err := tls.Listen("tcp", myNode.Address, config)
 	if err != nil {
 		log.Fatalln(err)
@@ -394,7 +255,7 @@ func initListen() net.Listener {
 func listen(listener net.Listener) {
 	conn, err := listener.Accept()
 	if err != nil {
-		log.Println("Listen accept error: " + err.Error())
+		fmt.Println("Listen accept error: " + err.Error())
 	}
 	defer conn.Close()
 	rpc.ServeConn(conn)

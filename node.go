@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/sha1"
-	"log"
+	"fmt"
 	"math/big"
 	"strconv"
 	"time"
@@ -17,13 +17,13 @@ var maxSteps = 32
 
 // Struct for this clients node
 type Node struct {
-	Address      string
-	FingerTable  []*BasicNode
-	Predecessor  *BasicNode
-	Successor    []*BasicNode
-	Id           []byte
-	Bucket       map[string]string
-	BackupBucket map[string]string
+	Address       string
+	FingerTable   []*BasicNode
+	Predecessor   *BasicNode
+	Successor     []*BasicNode
+	Id            []byte
+	PrimaryBucket map[string]string
+	BackupBucket  map[string]string
 }
 
 // BasicNode Struct: For nodes inside Node struct. Require less information and no recursion
@@ -32,7 +32,7 @@ type BasicNode struct {
 	Id      []byte
 }
 
-// Struct for sending and saving files
+// Struct for sending and saving Files
 type BasicFile struct {
 	Filename    string
 	Key         []byte
@@ -57,7 +57,7 @@ func newNode(ip string, port int, iArg string, r int) Node {
 
 	myBucket := make(map[string]string)
 	myBackupBucket := make(map[string]string)
-	return Node{Address: addr, Id: id, Bucket: myBucket, BackupBucket: myBackupBucket}
+	return Node{Address: addr, Id: id, PrimaryBucket: myBucket, BackupBucket: myBackupBucket}
 }
 
 // Called periodically. verifies node's immediate
@@ -74,14 +74,14 @@ func (node *Node) stabilize() {
 
 	// Notify immediate successor of node
 	node.Successor[0].rpcNotifyOf(node)
-	//node.Successor[0].rpcUpdateBackupBucketOf(node)
+	node.Successor[0].rpcUpdateBackupBucketOf(node)
 }
 
 // n′ thinks it might be our predecessor.
 func (node *Node) notify(n BasicNode) {
 	if node.Predecessor == nil || between(n.Id, node.Predecessor.Id, node.Id) {
 		node.Predecessor = &n
-		log.Println("New Predecessor:\nNode:\n\tAddress:", node.Predecessor.Address, "\n\tId:\t", string(node.Predecessor.Id))
+		fmt.Println("New Predecessor:\nNode:\n\tAddress:", node.Predecessor.Address, "\n\tId:\t", string(node.Predecessor.Id))
 	}
 }
 
@@ -95,7 +95,7 @@ func (node *Node) create() {
 
 // Join a Chord ring containing joiNode
 func (node *Node) join(joinNode BasicNode) {
-	log.Println("Sending request to join to: " + joinNode.Address + "\t")
+	fmt.Println("Sending request to join to: " + joinNode.Address + "\t")
 	successor := find(node.Id, joinNode)
 	// If node did not exist we add joiNode as successor
 	node.Successor = append(node.Successor, &successor)
@@ -103,7 +103,7 @@ func (node *Node) join(joinNode BasicNode) {
 	// Tell our predecessor that we are the new node
 	node.rpcUpdateSuccessorOf(&predOfSuc)
 	// Some information prints
-	log.Println("Immediate successor is:\n",
+	fmt.Println("Immediate successor is:\n",
 		"Node:\n",
 		"\tAddress:", node.Successor[0].Address, "\n",
 		"\tId:\t", string(node.Successor[0].Id))

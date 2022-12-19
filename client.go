@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -81,11 +80,11 @@ func StoreFile(filePath string) {
 	slicedPath := strings.Split(filePath, "/")
 	filename := slicedPath[len(slicedPath)-1]
 
-	if _, err := os.Stat(filePath); err == nil {
+	if _, err := os.Stat("upload/" + filePath); err == nil {
 		foundNode, found, hashed := Lookup(filename)
-		fileContent, err := os.ReadFile(filePath)
+		fileContent, err := os.ReadFile("upload/" + filePath)
 		if err != nil {
-			log.Println("Method: os.ReadFile Error:", err)
+			fmt.Println("Method: os.ReadFile Error:", err)
 			return
 		}
 		myFile := BasicFile{Filename: filename, Key: hashed, FileContent: fileContent}
@@ -103,7 +102,6 @@ func StoreFile(filePath string) {
 	} else {
 		fmt.Println("\nError: file does not exist")
 	}
-	myNode.rpcSendBackupTo(*myNode.Successor[0])
 }
 
 // Lookups if fileName exists in the ring
@@ -155,9 +153,9 @@ func PrintState() {
 		fmt.Println("\nFingertable Empty")
 	}
 
-	if len(myNode.Bucket) > 0 {
+	if len(myNode.PrimaryBucket) > 0 {
 		fmt.Println("\n+-+-+-+-+-+-+ Fingertable info +-+-+-+-+-+--+")
-		for _, bucketEntry := range myNode.Bucket {
+		for _, bucketEntry := range myNode.PrimaryBucket {
 			fmt.Println("\tFinger node: ", i, "\tID: ", bucketEntry)
 		}
 	} else {
