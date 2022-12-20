@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -29,6 +30,11 @@ func main() {
 
 	// Setup arguments
 	setupArguments()
+
+	// Running necessary scripts
+	fmt.Println("Generating certificates and crypto key...")
+	RunBash(*a)
+	fmt.Println("Done!\n")
 	myNode = newNode(*a, *p, *i, *r)
 
 	if *ja == "" {
@@ -46,7 +52,6 @@ func main() {
 
 	// Go routine for scanning input from user
 	go scan()
-
 	//Main for loop
 	for {
 		listen(listener) // Go routine for listening to traffic
@@ -86,8 +91,33 @@ func scan() {
 			PrintState()
 			break
 		default:
-			fmt.Print("\nCommand not found")
+			fmt.Print("\nCommand not found\n")
 		}
+	}
+}
+
+func RunBash(address string){
+	fpCert := filepath.Join("certs/", "generate-cert.sh")
+	fpKey := filepath.Join("crypto-key/", "generate-key.sh")
+
+	err := os.Chmod(fpCert, 0777)
+	if err != nil {
+		log.Println("Error in RunBash:", err)
+	}
+
+	_, err = exec.Command("/bin/bash", fpCert, address).Output()
+	if err != nil {
+		log.Println("Error in RunBash:", err)
+	}
+
+	err = os.Chmod(fpKey, 0777)
+	if err != nil {
+		log.Println("Error in RunBash:", err)
+	}
+
+	_, err = exec.Command("/bin/bash", fpKey, address).Output()
+	if err != nil {
+		log.Println("Error in RunBash:", err)
 	}
 }
 

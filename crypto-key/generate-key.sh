@@ -1,3 +1,4 @@
+cd crypto-key
 rm *.key
 
 # Generate encryption key

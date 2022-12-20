@@ -1,20 +1,14 @@
-rm *.crt
-rm *.key
-rm *.csr
+cd certs
+rm server.*
+rm client.*
 
-# Create CA private key and self-signed certificate
-# adding -nodes to not encrypt the private key
-openssl req -x509 -newkey rsa:4096 -nodes -days 365 -keyout ca.key -out ca.crt -subj "/C=SE/ST=EU/L=GOTHENBURG/O=DEV/OU=TEST/CN=ca/emailAddress=test@test.com"
-
-echo "CA's self-signed certificate"
-openssl x509 -in ca.crt -noout -text
 
 # Create Web Server private key and CSR
 # adding -nodes to not encrypt the private key
 openssl req -newkey rsa:4096 -nodes -keyout server.key -out server.csr -subj "/C=SE/ST=EU/L=GOTHENBURG/O=DEV/OU=SERVER/CN=server/emailAddress=test2@test.com"
 
 # Sign the Web Server Certificate Request (CSR)
-openssl x509 -req -extfile <(printf "subjectAltName=DNS:localhost,IP:127.0.0.1") -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out server.crt
+openssl x509 -req -extfile <(printf "subjectAltName=DNS:localhost,IP:$1") -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out server.crt
 
 echo "Server's signed certificate"
 openssl x509 -in server.crt -noout -text
