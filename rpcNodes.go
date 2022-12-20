@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -255,7 +256,8 @@ func initListen() net.Listener {
 		ClientCAs:    certPool,
 	}
 
-	listener, err := tls.Listen("tcp", myNode.Address, config)
+	ipPort := strings.Split(myNode.Address, ":")
+	listener, err := tls.Listen("tcp", ":"+ipPort[1], config)
 	if err != nil {
 		log.Fatalln(err)
 	}
