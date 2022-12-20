@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -295,13 +296,13 @@ func createFolders() {
 func PrintState() {
 
 	fmt.Println("+-+-+-+-+-+ Node info +-+-+-+-+-+-\n")
-	fmt.Println("\tID: ", string(myNode.Id), "\n\tIP/port: ", myNode.Address)
+	fmt.Println("\tID: ", string(myNode.Id), "\n\tAddress: ", myNode.Address)
 
 	if len(myNode.Successor) > 0 {
 		fmt.Println("\n+-+-+-+-+-+-+ Successors info +-+-+-+-+-+--+")
 		for i, suc := range myNode.Successor {
 			fmt.Println("\n\t-----Successor node", i, "info-----")
-			fmt.Println("\tID: ", string(suc.Id), "\n\tIP/port: ", suc.Address)
+			fmt.Println("\tID: ", string(suc.Id), "\n\tAddress: ", suc.Address)
 			fmt.Println("\t-------------------------------")
 		}
 	} else {
@@ -310,27 +311,42 @@ func PrintState() {
 
 	if len(myNode.FingerTable) > 0 {
 		fmt.Println("\n+-+-+-+-+-+-+ Fingertable info +-+-+-+-+-+--+")
+		fmt.Println("\tIf next entry in Fingertable equal the last it will not get printed")
+		var prev *BasicNode
 		for i, finger := range myNode.FingerTable {
+			if prev != nil && bytes.Equal(finger.Id, prev.Id) {
+				continue
+			}
+			prev = finger
 			if finger != nil {
-				fmt.Println("\tFinger node: ", i, "\tID: ", string(finger.Id), "\tIP/port: ", finger.Address)
+				fmt.Println("\tFinger node: ", i, "\tID: ", string(finger.Id), "\tAddress: ", finger.Address)
 			}
 		}
 	} else {
 		fmt.Println("\nFingertable Empty")
 	}
 
+	fmt.Println("\n+-+-+-+-+-+-+ PrimaryBucket info +-+-+-+-+-+--+")
 	if len(myNode.PrimaryBucket) > 0 {
-		fmt.Println("\n+-+-+-+-+-+-+ Fingertable info +-+-+-+-+-+--+")
-		for _, bucketEntry := range myNode.PrimaryBucket {
-			fmt.Println("\tFinger node: ", i, "\tID: ", bucketEntry)
+		for key, fileName := range myNode.PrimaryBucket {
+			fmt.Println("\tfile name: ", fileName, "\tfile key: ", key)
 		}
 	} else {
-		fmt.Println("\nFingertable Empty")
+		fmt.Println("\nPrimaryBucket Empty")
+	}
+
+	fmt.Println("\n+-+-+-+-+-+-+ BackupBucket info +-+-+-+-+-+--+")
+	if len(myNode.BackupBucket) > 0 {
+		for key, fileName := range myNode.BackupBucket {
+			fmt.Println("\tfile name: ", fileName, "\tfile key: ", key)
+		}
+	} else {
+		fmt.Println("\nBackupBucket Empty")
 	}
 
 	if myNode.Predecessor != nil {
 		fmt.Println("\n+-+-+-+-+-+-+ Predecessor info +-+-+-+-+-+--+")
-		fmt.Println("ID: ", string(myNode.Predecessor.Id), "\nIP/port: ", myNode.Predecessor.Address)
+		fmt.Println("ID: ", string(myNode.Predecessor.Id), "\nAddress: ", myNode.Predecessor.Address)
 		fmt.Println("-------------------------------")
 	} else {
 		fmt.Println("\nNo Predecessor found")
