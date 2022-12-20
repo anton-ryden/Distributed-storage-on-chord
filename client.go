@@ -2,8 +2,14 @@ package main
 
 import (
 	"bufio"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"fmt"
+	"io"
+	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -66,6 +72,12 @@ func scan() {
 				fmt.Println("No filename was given")
 			}
 			break
+		case "DownloadFile":
+			if len(sliceText) == 2 {
+				DownloadFile(sliceText[1])
+			} else {
+				fmt.Println("No filename was given")
+			}
 		case "PrintState":
 			PrintState()
 			break
@@ -87,7 +99,14 @@ func StoreFile(filePath string) {
 			fmt.Println("Method: os.ReadFile Error:", err)
 			return
 		}
-		myFile := BasicFile{Filename: filename, Key: hashed, FileContent: fileContent}
+
+		encryptedfileContent, keyFound := EncryptFileContent(fileContent)
+		if !keyFound {
+			fmt.Println("No encryption key was found, not sending file...")
+			return
+		}
+
+		myFile := BasicFile{Filename: filename, Key: hashed, FileContent: encryptedfileContent}
 
 		if !found && foundNode.Id != nil {
 			result := foundNode.rpcStoreFile(myFile)
@@ -102,6 +121,141 @@ func StoreFile(filePath string) {
 	} else {
 		fmt.Println("\nError: file does not exist")
 	}
+}
+
+// Downloads file with filename as name on the ring
+func DownloadFile(filename string) {
+	foundNode, found, hashed := Lookup(filename)
+
+	if found {
+		myFile := foundNode.rpcGetFile(hashed)
+		dir := "download/"
+
+		if _, err := os.Stat(dir); err != nil {
+			// Create directory downloads/ if it does not exist and set its permissions
+			os.MkdirAll(dir, os.ModePerm)
+			err = os.Chmod(dir, 0777)
+			if err != nil {
+				log.Println("Error in DownloadFile:", err)
+			}
+		}
+
+		// Create new file to store information in
+		newFile, err := os.Create(filepath.Join(dir, filepath.Base(myFile.Filename)))
+		if err != nil {
+			log.Println("Error in DownloadFile:", err)
+			return
+		}
+
+		// Setting permissions of the downloaded file
+		err = os.Chmod(filepath.Join(dir, myFile.Filename), 0777)
+		if err != nil {
+			log.Println("Error in DownloadFile:", err)
+		}
+
+		defer newFile.Close()
+
+		// Decrypt the contents of the file
+		errOcc := false
+		myFile.FileContent, errOcc = DecryptFileContent(myFile.FileContent)
+		if errOcc {
+			fmt.Println("Will not decrypt the file since an error occurred while decrypting")
+		}
+
+		// Store file information in the new file
+		_, err = newFile.Write(myFile.FileContent)
+		if err != nil {
+			log.Println("Error in DownloadFile:", err)
+			return
+		}
+		fmt.Println("\nFile was successfully downloaded. Located in " + dir + myFile.Filename)
+	} else {
+		fmt.Println("Since file was not found in the ring, it will not be downloaded")
+	}
+}
+
+// Encrypts file content fileContent using GCM and a symmetric encryption key
+func EncryptFileContent(fileContent []byte) ([]byte, bool) {
+	foundEncryptionKey := false
+	filePath := "crypto-key/sym-private.key"
+	slicedPath := strings.Split(filePath, "/")
+	filename := slicedPath[len(slicedPath)-1]
+
+	if _, err := os.Stat(filepath.Join(slicedPath[0]+"/", filename)); err == nil {
+		key, err := os.ReadFile("crypto-key/sym-private.key")
+		if err != nil {
+			log.Println("Error in EncryptFileContent:", err)
+			return fileContent, foundEncryptionKey
+		}
+
+		block, err := aes.NewCipher(key)
+		if err != nil {
+			log.Println("Error in EncryptFileContent:", err)
+			return fileContent, foundEncryptionKey
+		}
+
+		gcm, err := cipher.NewGCM(block)
+		if err != nil {
+			log.Println("Error in EncryptFileContent:", err)
+			return fileContent, foundEncryptionKey
+		}
+
+		nonce := make([]byte, gcm.NonceSize())
+		if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+			log.Println("Error in EncryptFileContent:", err)
+			return fileContent, foundEncryptionKey
+		}
+
+		ciphertext := gcm.Seal(nonce, nonce, fileContent, nil)
+		foundEncryptionKey = true
+		return ciphertext, foundEncryptionKey
+	}
+	return fileContent, foundEncryptionKey
+}
+
+// Decrypts file content fileContent using GCM and a symmetric encryption key
+func DecryptFileContent(fileContent []byte) ([]byte, bool) {
+	errOcc := false
+
+	filePath := "crypto-key/sym-private.key"
+	slicedPath := strings.Split(filePath, "/")
+	filename := slicedPath[1]
+	if _, err := os.Stat(filepath.Join(slicedPath[0]+"/", filename)); err == nil {
+		key, err := os.ReadFile(filePath)
+		if err != nil {
+			log.Println("Error in DecryptFileContent:", err)
+			errOcc = true
+			return fileContent, errOcc
+		}
+
+		block, err := aes.NewCipher(key)
+		if err != nil {
+			log.Println("Error in DecryptFileContent:", err)
+			errOcc = true
+			return fileContent, errOcc
+		}
+
+		gcm, err := cipher.NewGCM(block)
+		if err != nil {
+			log.Println("Error in DecryptFileContent:", err)
+			errOcc = true
+			return fileContent, errOcc
+		}
+
+		nonce := fileContent[:gcm.NonceSize()]
+		fileContentNew := fileContent[gcm.NonceSize():]
+
+		decryptedContent, err := gcm.Open(nil, nonce, fileContentNew, nil)
+		if err != nil {
+			log.Println("Error in DecryptFileContent:", err)
+			errOcc = true
+			return fileContent, errOcc
+		}
+
+		return decryptedContent, errOcc
+	}
+	fmt.Println("Did not find an encryption key in crypto-key/sym-private.key, will not decrypt file content.")
+	return fileContent, errOcc
 }
 
 // Lookups if fileName exists in the ring

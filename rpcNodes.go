@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -9,6 +10,8 @@ import (
 	"log"
 	"net"
 	"net/rpc"
+	"os"
+	"time"
 )
 
 type Ring int
@@ -29,19 +32,22 @@ func setConfig() {
 	// Read ca's cert
 	caCert, err := ioutil.ReadFile("certs/ca.crt")
 	if err != nil {
-		log.Fatal(caCert)
+		fmt.Println(caCert)
+		os.Exit(0)
 	}
 
 	// Create cert pool and append ca's cert
 	certPool := x509.NewCertPool()
 	if ok := certPool.AppendCertsFromPEM(caCert); !ok {
-		log.Fatal(err)
+		fmt.Println(err)
+		os.Exit(0)
 	}
 
 	// Read client cert
 	clientCert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		os.Exit(0)
 	}
 
 	clientConfig = &tls.Config{
@@ -53,7 +59,12 @@ func setConfig() {
 // Function that performs the sends rpc request and receive reply.
 func call(address string, method string, request interface{}, response interface{}) error {
 	// Create connection with a timeout value
-	conn, err := tls.Dial("tcp", address, clientConfig)
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutMs*time.Millisecond)
+	d := tls.Dialer{
+		Config: clientConfig,
+	}
+	conn, err := d.DialContext(ctx, "tcp", address)
+	cancel() // Ensure cancel is always called
 
 	if err != nil {
 		fmt.Println("Method: tls.Dial Error: ", err)

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"io/ioutil"
 	"log"
 	"os"
@@ -75,6 +76,31 @@ func (ring *Ring) StoreFile(file BasicFile, reply *bool) error {
 	return nil
 }
 
+func (node *BasicNode) rpcGetFile(fileId []byte) BasicFile {
+	var response *BasicFile
+	err := call(node.Address, "Ring.GetFile", fileId, &response)
+	if err != nil {
+		log.Println("Method: Ring.GetFile Error: ", err)
+	}
+	return *response
+}
+
+func (ring *Ring) GetFile(fileId []byte, reply *BasicFile) error {
+	// Fetch File from this node
+	myString := string(fileId[:])
+	filename := myNode.PrimaryBucket[myString]
+
+	// Get File Content
+	fileContent, err := os.ReadFile("primaryBucket/" + filename)
+	if err != nil {
+		log.Println("Method: os.ReadFile Error:", err)
+	}
+
+	myFile := BasicFile{FileContent: fileContent, Filename: filename, Key: fileId}
+	*reply = myFile
+	return nil
+}
+
 // Sends backup bucket to node, the response is the file that node does not have in backup that need to be sent
 // If the node is missing Files in backup we send it
 func (node *BasicNode) rpcUpdateBackupBucketOf(bucketOf *Node) {
@@ -120,7 +146,7 @@ func (ring *Ring) UpdateBackupBucketOf(backupBucket map[string]string, reply *Mu
 	// Why? If predecessor died you should now own their previous keys
 	for key, fileName := range myNode.BackupBucket {
 		// If key needs to be moved from backup to primary
-		if between([]byte(key), myNode.Predecessor.Id, myNode.Id) {
+		if between([]byte(key), myNode.Predecessor.Id, myNode.Id) && !bytes.Equal(myNode.Predecessor.Id, myNode.Id) {
 			fileContent, err := os.ReadFile("backupBucket/" + fileName)
 			if err != nil {
 				continue
@@ -181,6 +207,7 @@ func (ring *Ring) SendBackupFile(file BasicFile, reply *bool) error {
 	if err != nil {
 		return err
 	}
+
 	*reply = true
 	return nil
 }
