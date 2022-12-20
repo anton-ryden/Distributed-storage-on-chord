@@ -23,6 +23,9 @@ var myNode Node
 
 // Main
 func main() {
+	// Creates necessary folders if not created
+	createFolders()
+
 	// Setup arguments
 	setupArguments()
 	myNode = newNode(*a, *p, *i, *r)
@@ -130,15 +133,6 @@ func DownloadFile(filename string) {
 	if found {
 		myFile := foundNode.rpcGetFile(hashed)
 		dir := "download/"
-
-		if _, err := os.Stat(dir); err != nil {
-			// Create directory downloads/ if it does not exist and set its permissions
-			os.MkdirAll(dir, os.ModePerm)
-			err = os.Chmod(dir, 0777)
-			if err != nil {
-				log.Println("Error in DownloadFile:", err)
-			}
-		}
 
 		// Create new file to store information in
 		newFile, err := os.Create(filepath.Join(dir, filepath.Base(myFile.Filename)))
@@ -277,6 +271,24 @@ func Lookup(fileName string) (BasicNode, bool, []byte) {
 		fmt.Println("\nFile does not exist in ring")
 	}
 	return foundNode, isFile, hashed
+}
+
+// Creates necessary folders if not created
+func createFolders() {
+	folders := []string{"backupBucket", "download", "primaryBucket"}
+	for _, dir := range folders {
+		if _, err := os.Stat(dir); err != nil {
+			// Create directory downloads/ if it does not exist and set its permissions
+			os.MkdirAll(dir, os.ModePerm)
+			err = os.Chmod(dir, 0777)
+			if err != nil {
+				fmt.Println("Method MkdirAll Error: ", err)
+			} else {
+				fmt.Println("Created folder: " + dir)
+			}
+		}
+	}
+
 }
 
 // Print information of this clients node
