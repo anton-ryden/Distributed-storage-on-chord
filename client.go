@@ -32,9 +32,8 @@ func main() {
 	setupArguments()
 
 	// Running necessary scripts
-	fmt.Println("Generating certificates and crypto key...")
 	RunBash(*a)
-	fmt.Println("Done!\n")
+
 	myNode = newNode(*a, *p, *i, *r)
 
 	if *ja == "" {
@@ -96,7 +95,8 @@ func scan() {
 	}
 }
 
-func RunBash(address string){
+func RunBash(address string) {
+	fmt.Println("Generating certificates and crypto key...")
 	fpCert := filepath.Join("certs/", "generate-cert.sh")
 	fpKey := filepath.Join("crypto-key/", "generate-key.sh")
 
@@ -119,6 +119,7 @@ func RunBash(address string){
 	if err != nil {
 		log.Println("Error in RunBash:", err)
 	}
+	fmt.Println("Done!\n")
 }
 
 // Stores file from filePath in the ring
