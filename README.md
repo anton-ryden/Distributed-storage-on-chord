@@ -1,5 +1,5 @@
 # Distributed-storage-on-chord
-A fault-tolerant simple storage system based on the chord protocol that uses TLS and file encryption.
+A simple fault-tolerant storage system based on the chord protocol that uses TLS and file encryption.
 
 ## How to use
 The system is started by compiling with the command ```go build```. This will generate the binary file named chordClient. Run this binary file with necessary arguments
@@ -36,10 +36,9 @@ There are six folders that exists on each Chord client
 There are three scripts in total, two of which runs automatically when starting a Chord client
 
 - ```generate-ca-cert.sh```: Located in the ```certs``` folder. It generates a CA certificate and key that is to be used to sign the certificates of any Chord client that wants to join the system.
-This script only needs to be executed once by the user that starts the system. Both the CA certificate and key needs to be shared to any other clients that
-wants to join the system. If you would use this in a real application you would not share the ca. You would instead sign the cert with the ca then send the cert to allow for maximum security.
+This script only needs to be executed once by the user that starts the system. All clients must have their certificates signed by the same CA for it to work.
 - ```generate-cert.sh```: Located in the ```certs``` folder. It generates both server and client certificates and keys for the local Chord client. CA certificate
-and key needs to be present in the certs folder before running. This script runs automatically when starting a new local Chord client.
+and key needs to be present in the certs folder before running since each certificate will be signed by the CA. This script runs automatically when starting a new local Chord client.
 - ```generate-key.sh```: Located in the ```crypto-key``` folder. It generates a symmetric 128-bit AES key to be used by the local Chord client when uploading to or downloading
 files from the Chord ring. This script runs automatically when starting a new local Chord client.
 
