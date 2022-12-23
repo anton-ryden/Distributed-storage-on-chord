@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -10,7 +11,7 @@ import (
 )
 
 // m bits
-const m = sha1.Size * 24
+const m = 40 * 8 // Max for char and 1 char is 8 bits
 
 // Max amount of request to find successor
 var maxSteps = 32
@@ -81,7 +82,7 @@ func (node *Node) stabilize() {
 func (node *Node) notify(n BasicNode) {
 	if node.Predecessor == nil || between(n.Id, node.Predecessor.Id, node.Id) {
 		node.Predecessor = &n
-		fmt.Println("New Predecessor:\nNode:\n\tAddress:", node.Predecessor.Address, "\n\tId:\t", string(node.Predecessor.Id))
+		fmt.Println("New Predecessor:\nNode:\n\tAddress:", node.Predecessor.Address, "\n\tId:\t", hex.EncodeToString(node.Predecessor.Id))
 	}
 }
 
@@ -106,7 +107,7 @@ func (node *Node) join(joinNode BasicNode) {
 	fmt.Println("Immediate successor is:\n",
 		"Node:\n",
 		"\tAddress:", node.Successor[0].Address, "\n",
-		"\tId:\t", string(node.Successor[0].Id))
+		"\tId:\t", hex.EncodeToString(node.Successor[0].Id))
 }
 
 // Find immediate successor to join
@@ -178,7 +179,6 @@ func between(elt, start, end []byte) bool {
 		return bytes.Compare(start, elt) != 0
 	}
 	return false
-
 }
 
 // Search the local table for the highest predecessor of id
@@ -248,17 +248,16 @@ func hash(stringInput string) []byte {
 	hashedVal := new(big.Int).SetBytes(h.Sum([]byte(stringInput)))
 	hashMod := new(big.Int).Exp(big.NewInt(2), big.NewInt(m), nil)
 	hashedVal.Mod(hashedVal, hashMod)
-	return []byte(hashedVal.String())
+	return hashedVal.Bytes()
 }
 
 // Arithmetic used in fingerTable
 func (node *Node) jump(fingerentry int) []byte {
 	two := big.NewInt(2)
-	hashMod := new(big.Int).Exp(big.NewInt(2), big.NewInt(m), nil)
+	hashMod := new(big.Int).Exp(two, big.NewInt(m), nil)
 	jump := new(big.Int).Exp(two, big.NewInt(int64(fingerentry)), nil)
 	n := new(big.Int).SetBytes(node.Id)
 	sum := new(big.Int).Add(n, jump)
 	result := new(big.Int).Mod(sum, hashMod)
-	res := result.Bytes()
-	return res
+	return result.Bytes()
 }

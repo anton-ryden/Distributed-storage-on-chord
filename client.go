@@ -6,6 +6,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -327,13 +328,13 @@ func createFolders() {
 func PrintState() {
 
 	fmt.Println("+-+-+-+-+-+ Node info +-+-+-+-+-+-\n")
-	fmt.Println("\tID: ", string(myNode.Id), "\n\tAddress: ", myNode.Address)
+	fmt.Println("\tID: ", hex.EncodeToString(myNode.Id), "\n\tAddress: ", myNode.Address)
 
 	if len(myNode.Successor) > 0 {
 		fmt.Println("\n+-+-+-+-+-+-+ Successors info +-+-+-+-+-+--+")
 		for i, suc := range myNode.Successor {
 			fmt.Println("\n\t-----Successor node", i, "info-----")
-			fmt.Println("\tID: ", string(suc.Id), "\n\tAddress: ", suc.Address)
+			fmt.Println("\tID: ", hex.EncodeToString(suc.Id), "\n\tAddress: ", suc.Address)
 			fmt.Println("\t-------------------------------")
 		}
 	} else {
@@ -350,7 +351,7 @@ func PrintState() {
 			}
 			prev = finger
 			if finger != nil {
-				fmt.Println("\tFinger node: ", i, "\tID: ", string(finger.Id), "\tAddress: ", finger.Address)
+				fmt.Println("\tFinger node: ", i, "\tID: ", hex.EncodeToString(finger.Id), "\tAddress: ", finger.Address)
 			}
 		}
 	} else {
@@ -377,7 +378,7 @@ func PrintState() {
 
 	if myNode.Predecessor != nil {
 		fmt.Println("\n+-+-+-+-+-+-+ Predecessor info +-+-+-+-+-+--+")
-		fmt.Println("ID: ", string(myNode.Predecessor.Id), "\nAddress: ", myNode.Predecessor.Address)
+		fmt.Println("ID: ", hex.EncodeToString(myNode.Predecessor.Id), "\nAddress: ", myNode.Predecessor.Address)
 		fmt.Println("-------------------------------")
 	} else {
 		fmt.Println("\nNo Predecessor found")

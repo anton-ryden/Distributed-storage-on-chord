@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -18,7 +19,7 @@ import (
 type Ring int
 
 // Amount of ms before timeout of connection
-const timeoutMs = 1000
+const timeoutMs = 100000
 
 // Used in find rpc call
 type RpcReply struct {
@@ -90,7 +91,7 @@ func (node *Node) rpcCopySuccessor() {
 	// When list becomes empty set successor to myself
 	for i, suc = range node.Successor {
 		if i != 0 {
-			fmt.Println("Successor is dead. Trying next successor in list:\nNode:\n\tAddress:", node.Successor[0].Address, "\n\tId:\t", string(node.Successor[0].Id))
+			fmt.Println("Successor is dead. Trying next successor in list:\nNode:\n\tAddress:", node.Successor[0].Address, "\n\tId:\t", hex.EncodeToString(node.Successor[0].Id))
 		}
 		err := call(suc.Address, "Ring.CopySuccessor", false, &response)
 		if err == nil { // If call did not generate error we found the immediate successor
@@ -102,7 +103,7 @@ func (node *Node) rpcCopySuccessor() {
 	if err != nil {
 		myself := BasicNode{Address: node.Address, Id: node.Id}
 		node.Successor[0] = &myself
-		fmt.Println("All successors in list is dead new succesor is:\nNode:\n\tAddress:", node.Successor[0].Address, "\n\tId:\t", string(node.Successor[0].Id))
+		fmt.Println("All successors in list is dead new succesor is:\nNode:\n\tAddress:", node.Successor[0].Address, "\n\tId:\t", hex.EncodeToString(node.Successor[0].Id))
 		return
 	}
 
@@ -168,7 +169,7 @@ func (ring *Ring) UpdateSuccessorOf(newSuccessor *BasicNode, reply *bool) error 
 	fmt.Println("New immediate successor:\n",
 		"Node:\n",
 		"\tAddress:", myNode.Successor[0].Address, "\n",
-		"\tId:\t", string(myNode.Successor[0].Id))
+		"\tId:\t", hex.EncodeToString(myNode.Successor[0].Id))
 
 	return nil
 }
@@ -195,7 +196,7 @@ func (node *BasicNode) rpcIsAlive() bool {
 	err := call(node.Address, "Ring.CheckAlive", false, &response)
 	// If no error the node is alive
 	if err != nil {
-		fmt.Println("Address: ", node.Address, " Id: ", string(node.Id), " is no longer alive"+
+		fmt.Println("Address: ", node.Address, " Id: ", hex.EncodeToString(node.Id), " is no longer alive"+
 			", Predecessor is now nil")
 		return false
 	}
