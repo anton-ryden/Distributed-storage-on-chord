@@ -1,7 +1,0 @@
-./chordClient -a 127.0.0.1 -p 4000 --ts 1000 --tff 1000 --tcp 1000 -r 4 -i node0
-
-./chordClient -a 127.0.0.1 -p 4001 --ja 127.0.0.1 --jp 4000 --ts 1000 --tff 1000 --tcp 1000 -r 4 -i node1
-
-./chordClient -a 127.0.0.1 -p 4002 --ja 127.0.0.1 --jp 4000 --ts 1000 --tff 1000 --tcp 1000 -r 4 -i node2
-
-./chordClient -a 127.0.0.1 -p 4003 --ja 127.0.0.1 --jp 4000 --ts 1000 --tff 1000 --tcp 1000 -r 4 -i node3
