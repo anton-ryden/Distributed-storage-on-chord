@@ -1,5 +1,5 @@
 # Distributed-storage-on-chord
-A simple fault-tolerant storage system based on the chord protocol that uses TLS and file encryption.
+A simple fault-tolerant storage system based on the chord protocol(P2P) that uses TLS and file encryption.
 The implementation is inspired by the paper ```Chord: A Scalable Peer-to-peer Lookup Protocol
 for Internet Applications```
 Which can be found at: https://pdos.csail.mit.edu/papers/ton:chord/paper-ton.pdf
