@@ -1,6 +1,8 @@
 # Distributed-storage-on-chord
 A simple fault-tolerant storage system based on the chord protocol that uses TLS and file encryption.
-
+The implementation is inspired by the paper ```Chord: A Scalable Peer-to-peer Lookup Protocol
+for Internet Applications```
+Which can be found at: https://pdos.csail.mit.edu/papers/ton:chord/paper-ton.pdf
 ## How to use
 The system is started by compiling with the command ```go build```. This will generate the binary file named chordClient. Run this binary file with necessary arguments
 
